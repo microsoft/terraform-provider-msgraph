@@ -1,15 +1,16 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package provider
+package services
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/azure/terraform-provider-msgraph/internal/clients"
-	"github.com/azure/terraform-provider-msgraph/internal/dynamic"
+	"github.com/azure/terraform-provider-msgraph/internal/docstrings"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -27,9 +28,11 @@ type MSGraphDataSource struct {
 
 // MSGraphDataSourceModel describes the data source data model.
 type MSGraphDataSourceModel struct {
-	Url    types.String  `tfsdk:"url"`
-	Id     types.String  `tfsdk:"id"`
-	Output types.Dynamic `tfsdk:"output"`
+	Id                   types.String      `tfsdk:"id"`
+	ApiVersion           types.String      `tfsdk:"api_version"`
+	Url                  types.String      `tfsdk:"url"`
+	ResponseExportValues map[string]string `tfsdk:"response_export_values"`
+	Output               types.Dynamic     `tfsdk:"output"`
 }
 
 func (r *MSGraphDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -39,36 +42,36 @@ func (r *MSGraphDataSource) Metadata(ctx context.Context, req datasource.Metadat
 func (r *MSGraphDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Example data source",
+		MarkdownDescription: "This data source can list resources or read an individual resource from the Microsoft Graph API.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: "Example identifier",
+				MarkdownDescription: "The ID of the MSGraph resource",
 				Computed:            true,
 			},
 
-			"type": schema.StringAttribute{
-				Description: "The type of the data source, for example: `users/todo/lists/tasks@v1.0`",
-				Required:    true,
+			"url": schema.StringAttribute{
+				MarkdownDescription: docstrings.Url("data"),
+				Required:            true,
 			},
 
-			"name": schema.StringAttribute{
-				Description: "The name of the data source",
-				Optional:    true,
+			"api_version": schema.StringAttribute{
+				MarkdownDescription: docstrings.ApiVersion(),
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("v1.0", "beta"),
+				},
 			},
 
-			"parent_id": schema.StringAttribute{
-				Description: "The parent identifier",
-				Optional:    true,
-			},
-
-			"resource_id": schema.StringAttribute{
-				Description: "The resource identifier",
-				Optional:    true,
+			"response_export_values": schema.MapAttribute{
+				MarkdownDescription: docstrings.ResponseExportValues(),
+				Optional:            true,
+				ElementType:         types.StringType,
 			},
 
 			"output": schema.DynamicAttribute{
-				Computed: true,
+				MarkdownDescription: docstrings.Output(),
+				Computed:            true,
 			},
 		},
 	}
@@ -86,16 +89,19 @@ func (r *MSGraphDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	out, err := r.client.Read(ctx, model.Url.ValueString())
+	// support pagination
+	apiVersion := "v1.0"
+	if model.ApiVersion.ValueString() != "" {
+		apiVersion = model.ApiVersion.ValueString()
+	}
+	responseBody, err := r.client.Read(ctx, model.Url.ValueString(), apiVersion)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to read data source", err.Error())
 		return
 	}
 
 	model.Id = model.Url
-
-	data, _ := json.Marshal(out)
-	model.Output, _ = dynamic.FromJSONImplied(data)
+	model.Output = types.DynamicValue(buildOutputFromBody(responseBody, model.ResponseExportValues))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }

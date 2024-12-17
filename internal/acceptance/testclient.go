@@ -10,8 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/terraform-provider-azapi/internal/clients"
-	"github.com/Azure/terraform-provider-azapi/internal/features"
+	"github.com/azure/terraform-provider-msgraph/internal/clients"
 )
 
 var (
@@ -61,12 +60,10 @@ func BuildTestClient() (*clients.Client, error) {
 		}
 
 		copt := &clients.Option{
-			Cred:                     cred,
-			CloudCfg:                 cloudConfig,
-			Features:                 features.Default(),
-			SkipProviderRegistration: true,
-			TenantId:                 os.Getenv("ARM_TENANT_ID"),
-			SubscriptionId:           os.Getenv("ARM_SUBSCRIPTION_ID"),
+			Cred:           cred,
+			CloudCfg:       cloudConfig,
+			TenantId:       os.Getenv("ARM_TENANT_ID"),
+			SubscriptionId: os.Getenv("ARM_SUBSCRIPTION_ID"),
 		}
 
 		client := &clients.Client{}

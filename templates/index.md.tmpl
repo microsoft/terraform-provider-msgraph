@@ -1,0 +1,52 @@
+---
+layout: "msgraph"
+page_title: "Provider: MSGraph API"
+description: |-
+  The MSGraph Provider is used to interact with the many resources supported by Microsoft Graph through its APIs.
+---
+
+# MSGraph Provider
+
+The MSGraph provider is a very thin layer on top of the MSGraph REST APIs. 
+
+Documentation regarding the [Data Sources](/docs/configuration/data-sources.html) and [Resources](/docs/configuration/resources.html) supported by the MSGraph Provider can be found in the navigation to the left.
+
+Interested in the provider's latest features, or want to make sure you're up to date? Check out the [changelog](https://github.com/ms-henglu/terraform-provider-msgraph/blob/main/CHANGELOG.md) for version information and release notes.
+
+Strongly recommended to install [MSGraph VSCode Extension](https://marketplace.visualstudio.com/items?itemName=azapi-vscode.msgraph), it provides a rich authoring experience to help you use the MSGraph provider.
+
+Also, there is a rich library of [examples](https://github.com/ms-henglu/terraform-provider-msgraph/tree/main/examples) to help you get started.
+
+## Authenticating to MSGraph
+
+Terraform supports a number of different methods for authenticating to Azure:
+
+* [Authenticating to MSGraph using the Azure CLI](guides/azure_cli.html)
+* [Authenticating to MSGraph using Managed Service Identity](guides/managed_service_identity.html)
+* [Authenticating to MSGraph using a Service Principal and a Client Certificate](guides/service_principal_client_certificate.html)
+* [Authenticating to MSGraph using a Service Principal and a Client Secret](guides/service_principal_client_secret.html)
+* [Authenticating to MSGraph using OpenID Connect](guides/service_principal_oidc.html)
+
+---
+
+We recommend using either a Service Principal or Managed Service Identity when running Terraform non-interactively (such as when running Terraform in a CI server) - and authenticating using the Azure CLI when running Terraform locally.
+
+## Example Usage
+
+```hcl
+# We strongly recommend using the required_providers block to set the
+# Azure Provider source and version being used
+terraform {
+  required_providers {
+    msgraph = {
+      source = "microsoft/msgraph"
+    }
+  }
+}
+
+provider "msgraph" {
+}
+
+```
+
+{{ .SchemaMarkdown | trimspace }}

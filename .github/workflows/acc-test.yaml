@@ -1,0 +1,25 @@
+name: OIDC Auth Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.21'
+      - run: chmod -R +x ./scripts
+      - run: bash scripts/gogetcookie.sh
+      - run: make acctests
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+          ARM_USE_OIDC: true
+          TESTARGS: '-run TestAccAuth_oidc'

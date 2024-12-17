@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/Azure/terraform-provider-azapi/internal/acceptance"
-	"github.com/Azure/terraform-provider-azapi/internal/clients"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/azure/terraform-provider-msgraph/internal/acceptance"
+	"github.com/azure/terraform-provider-msgraph/internal/clients"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 type thatType struct {
@@ -24,7 +24,7 @@ func That(resourceName string) thatType {
 }
 
 // DoesNotExistInAzure validates that the specified resource does not exist within Azure
-func (t thatType) DoesNotExistInAzure(testResource acceptance.TestResource) resource.TestCheckFunc {
+func (t thatType) DoesNotExist(testResource acceptance.TestResource) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client, err := acceptance.BuildTestClient()
 		if err != nil {
@@ -34,8 +34,8 @@ func (t thatType) DoesNotExistInAzure(testResource acceptance.TestResource) reso
 	}
 }
 
-// ExistsInAzure validates that the specified resource exists within Azure
-func (t thatType) ExistsInAzure(testResource acceptance.TestResource) resource.TestCheckFunc {
+// Exists validates that the specified resource exists within Azure
+func (t thatType) Exists(testResource acceptance.TestResource) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client, err := acceptance.BuildTestClient()
 		if err != nil {

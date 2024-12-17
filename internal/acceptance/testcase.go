@@ -5,14 +5,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Azure/terraform-provider-azapi/internal/azure/location"
-	"github.com/Azure/terraform-provider-azapi/internal/clients"
-	"github.com/Azure/terraform-provider-azapi/internal/provider"
+	"github.com/azure/terraform-provider-msgraph/internal/clients"
+	"github.com/azure/terraform-provider-msgraph/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 const (
@@ -21,14 +19,6 @@ const (
 )
 
 type TestData struct {
-	// LocationPrimary is the Primary Azure Region which should be used for testing
-	LocationPrimary string
-
-	// LocationSecondary is the Secondary Azure Region which should be used for testing
-	LocationSecondary string
-
-	// LocationTernary is the Ternary Azure Region which should be used for testing
-	LocationTernary string
 
 	// RandomInteger is a random integer which is unique to this test case
 	RandomInteger int
@@ -52,14 +42,11 @@ type TestData struct {
 func BuildTestData(t *testing.T, resourceType string, resourceLabel string) TestData {
 	return TestData{
 		RandomInteger: RandTimeInt(),
-		RandomString:  acctest.RandStringFromCharSet(5, charSetAlphaNum),
+		RandomString:  RandStringFromCharSet(5, charSetAlphaNum),
 		ResourceName:  fmt.Sprintf("%s.%s", resourceType, resourceLabel),
 
-		ResourceType:      resourceType,
-		resourceLabel:     resourceLabel,
-		LocationPrimary:   location.Normalize(os.Getenv("ARM_TEST_LOCATION")),
-		LocationSecondary: location.Normalize(os.Getenv("ARM_TEST_LOCATION_ALT")),
-		LocationTernary:   location.Normalize(os.Getenv("ARM_TEST_LOCATION_ALT2")),
+		ResourceType:  resourceType,
+		resourceLabel: resourceLabel,
 	}
 }
 
@@ -69,7 +56,7 @@ func (td *TestData) RandomInt() int {
 }
 
 func (td *TestData) RandomStringOfLength(len int) string {
-	return acctest.RandStringFromCharSet(len, charSetAlphaNum)
+	return RandStringFromCharSet(len, charSetAlphaNum)
 }
 
 // UpgradeTestDeployStep returns a test step used to deploy the configuration with previous version
@@ -77,8 +64,8 @@ func (td TestData) UpgradeTestDeployStep(step resource.TestStep, upgradeFrom str
 	if step.ExternalProviders == nil {
 		step.ExternalProviders = td.externalProviders()
 	}
-	step.ExternalProviders["azapi"] = resource.ExternalProvider{
-		Source:            "registry.terraform.io/azure/azapi",
+	step.ExternalProviders["msgraph"] = resource.ExternalProvider{
+		Source:            "registry.terraform.io/microsoft/msgraph",
 		VersionConstraint: fmt.Sprintf("= %s", upgradeFrom),
 	}
 	step.ProtoV6ProviderFactories = nil
@@ -166,7 +153,7 @@ func (td TestData) runAcceptanceTest(t *testing.T, testCase resource.TestCase) {
 
 func (td TestData) providers() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
-		"azapi": providerserver.NewProtocol6WithError(provider.AzureProvider()),
+		"msgraph": providerserver.NewProtocol6WithError(&provider.MSGraphProvider{}),
 	}
 }
 
@@ -182,25 +169,16 @@ For tests that authenticate with Azure by using a Service Principal, the followi
 - ARM_CLIENT_SECRET
 - ARM_SUBSCRIPTION_ID
 - ARM_TENANT_ID
-- ARM_TEST_LOCATION
-- ARM_TEST_LOCATION_ALT
-- ARM_TEST_LOCATION_ALT2
 
 For tests that authenticate with Azure by OIDC in github action, the following environment variables must be set:
 - ARM_CLIENT_ID
 - ARM_TENANT_ID
-- ARM_TEST_LOCATION
-- ARM_TEST_LOCATION_ALT
-- ARM_TEST_LOCATION_ALT2
 
 For tests that authenticate with Azure by using a Service Principal with Certificate, the following environment variables must be set:
 - ARM_CLIENT_ID
 - ARM_CLIENT_CERTIFICATE_PATH
 - ARM_SUBSCRIPTION_ID
 - ARM_TENANT_ID
-- ARM_TEST_LOCATION
-- ARM_TEST_LOCATION_ALT
-- ARM_TEST_LOCATION_ALT2
 `)
 	}
 }

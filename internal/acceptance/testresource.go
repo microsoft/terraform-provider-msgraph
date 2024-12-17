@@ -3,8 +3,8 @@ package acceptance
 import (
 	"context"
 
-	"github.com/Azure/terraform-provider-azapi/internal/clients"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/azure/terraform-provider-msgraph/internal/clients"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 type TestResource interface {
