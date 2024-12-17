@@ -9,6 +9,9 @@ func NormalizeJson(jsonString interface{}) string {
 	if jsonString == nil || jsonString == "" {
 		return ""
 	}
+	if _, ok := jsonString.(string); !ok {
+		return ""
+	}
 	var j interface{}
 
 	if err := json.Unmarshal([]byte(jsonString.(string)), &j); err != nil {

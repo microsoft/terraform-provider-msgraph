@@ -173,7 +173,7 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	responseBody, err := r.client.Update(ctx, model.Id.ValueString(), model.ApiVersion.ValueString(), requestBody)
+	_, err = r.client.Update(ctx, model.Id.ValueString(), model.ApiVersion.ValueString(), requestBody)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create resource", err.Error())
 		return

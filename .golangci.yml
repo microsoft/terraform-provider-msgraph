@@ -17,7 +17,6 @@ linters:
     - makezero
     - misspell
     - nilerr
-    - predeclared
     - staticcheck
     - tenv
     - unconvert
