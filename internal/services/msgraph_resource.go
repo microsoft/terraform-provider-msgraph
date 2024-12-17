@@ -179,7 +179,7 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	responseBody, err = r.client.Read(ctx, model.Id.ValueString(), model.ApiVersion.ValueString())
+	responseBody, err := r.client.Read(ctx, model.Id.ValueString(), model.ApiVersion.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to read data source", err.Error())
 		return
