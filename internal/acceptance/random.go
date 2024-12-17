@@ -12,11 +12,13 @@ import (
 
 // RandInt generates a random integer
 func RandInt() int {
+	// #nosec G404
 	return rand.Int()
 }
 
 // RandIntRange returns a random integer between min (inclusive) and max (exclusive)
 func RandIntRange(min int, max int) int {
+	// #nosec G404
 	return rand.Intn(max-min) + min
 }
 
