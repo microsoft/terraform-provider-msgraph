@@ -17,8 +17,6 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-         go-version: '1.21'
-      - run: chmod -R +x ./scripts
-      - run: bash scripts/gogetcookie.sh
+          go-version-file: 'go.mod'
       - run: make tools
       - run: make depscheck
