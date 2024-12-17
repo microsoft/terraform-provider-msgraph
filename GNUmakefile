@@ -26,7 +26,6 @@ docs:
 
 tools:
 	@echo "==> installing required tooling..."
-	@sh "$(CURDIR)/scripts/gogetcookie.sh"
 	go install github.com/client9/misspell/cmd/misspell@latest
 	go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@latest
 	go install github.com/bflad/tfproviderdocs@latest
