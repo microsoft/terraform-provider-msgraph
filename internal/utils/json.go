@@ -5,16 +5,19 @@ import (
 	"fmt"
 )
 
-func NormalizeJson(jsonString interface{}) string {
-	if jsonString == nil || jsonString == "" {
+func NormalizeJson(input interface{}) string {
+	if input == nil || input == "" {
 		return ""
 	}
-	if _, ok := jsonString.(string); !ok {
+
+	jsonString, ok := input.(string)
+	if !ok {
 		return ""
 	}
+
 	var j interface{}
 
-	if err := json.Unmarshal([]byte(jsonString.(string)), &j); err != nil {
+	if err := json.Unmarshal([]byte(jsonString), &j); err != nil {
 		return fmt.Sprintf("Error parsing JSON: %+v", err)
 	}
 	b, _ := json.Marshal(j)
