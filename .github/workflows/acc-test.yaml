@@ -22,4 +22,3 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
           ARM_USE_OIDC: true
           TESTARGS: '-run TestAcc_ResourceBasic'
-          TF_LOG: 'DEBUG'
