@@ -413,7 +413,7 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 		TenantID: model.TenantID.ValueString(),
 	}
 
-	cred, err := buildChainedTokenCredential(model, option)
+	cred, err := BuildChainedTokenCredential(model, option)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to obtain a credential.", err.Error())
 		return
@@ -478,7 +478,7 @@ func buildUserAgent(terraformVersion string, partnerID string, disableTerraformP
 	return userAgent
 }
 
-func buildChainedTokenCredential(model MSGraphProviderModel, options azidentity.DefaultAzureCredentialOptions) (*azidentity.ChainedTokenCredential, error) {
+func BuildChainedTokenCredential(model MSGraphProviderModel, options azidentity.DefaultAzureCredentialOptions) (*azidentity.ChainedTokenCredential, error) {
 	log.Printf("[DEBUG] building chained token credential")
 	var creds []azcore.TokenCredential
 
