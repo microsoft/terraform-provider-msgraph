@@ -60,10 +60,9 @@ func BuildTestClient() (*clients.Client, error) {
 		}
 
 		copt := &clients.Option{
-			Cred:           cred,
-			CloudCfg:       cloudConfig,
-			TenantId:       os.Getenv("ARM_TENANT_ID"),
-			SubscriptionId: os.Getenv("ARM_SUBSCRIPTION_ID"),
+			Cred:     cred,
+			CloudCfg: cloudConfig,
+			TenantId: os.Getenv("ARM_TENANT_ID"),
 		}
 
 		client := &clients.Client{}

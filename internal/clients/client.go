@@ -25,7 +25,6 @@ type Option struct {
 	DisableCorrelationRequestID bool
 	CloudCfg                    cloud.Configuration
 	CustomCorrelationRequestID  string
-	SubscriptionId              string
 	TenantId                    string
 }
 

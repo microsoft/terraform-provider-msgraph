@@ -33,7 +33,6 @@ type MSGraphProvider struct {
 }
 
 type MSGraphProviderModel struct {
-	SubscriptionID               types.String `tfsdk:"subscription_id"`
 	ClientID                     types.String `tfsdk:"client_id"`
 	ClientIDFilePath             types.String `tfsdk:"client_id_file_path"`
 	TenantID                     types.String `tfsdk:"tenant_id"`
@@ -137,11 +136,6 @@ func (p *MSGraphProvider) Schema(ctx context.Context, req provider.SchemaRequest
 	resp.Schema = schema.Schema{
 		Description: "MSGraph provider",
 		Attributes: map[string]schema.Attribute{
-			"subscription_id": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The Subscription ID which should be used. This can also be sourced from the `ARM_SUBSCRIPTION_ID` Environment Variable.",
-			},
-
 			"client_id": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The Client ID which should be used. This can also be sourced from the `ARM_CLIENT_ID` Environment Variable.",
@@ -266,11 +260,6 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	// set the defaults from environment variables
-	if model.SubscriptionID.IsNull() {
-		if v := os.Getenv("ARM_SUBSCRIPTION_ID"); v != "" {
-			model.SubscriptionID = types.StringValue(v)
-		}
-	}
 	if model.ClientID.IsNull() {
 		if v := os.Getenv("ARM_CLIENT_ID"); v != "" {
 			model.ClientID = types.StringValue(v)
@@ -436,7 +425,6 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 		DisableCorrelationRequestID: model.DisableCorrelationRequestID.ValueBool(),
 		CustomCorrelationRequestID:  model.CustomCorrelationRequestID.ValueString(),
 		CloudCfg:                    cloud.Configuration{},
-		SubscriptionId:              model.SubscriptionID.ValueString(),
 		TenantId:                    model.TenantID.ValueString(),
 	}
 	client := &clients.Client{}

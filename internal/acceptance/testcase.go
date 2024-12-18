@@ -167,7 +167,6 @@ func PreCheck(t *testing.T) {
 For tests that authenticate with Azure by using a Service Principal, the following environment variables must be set:
 - ARM_CLIENT_ID
 - ARM_CLIENT_SECRET
-- ARM_SUBSCRIPTION_ID
 - ARM_TENANT_ID
 
 For tests that authenticate with Azure by OIDC in github action, the following environment variables must be set:
@@ -177,7 +176,6 @@ For tests that authenticate with Azure by OIDC in github action, the following e
 For tests that authenticate with Azure by using a Service Principal with Certificate, the following environment variables must be set:
 - ARM_CLIENT_ID
 - ARM_CLIENT_CERTIFICATE_PATH
-- ARM_SUBSCRIPTION_ID
 - ARM_TENANT_ID
 `)
 	}
