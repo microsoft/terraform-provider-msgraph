@@ -28,6 +28,20 @@ func TestAcc_DataSourceBasic(t *testing.T) {
 	})
 }
 
+func TestAcc_DataSourceQueryParameters(t *testing.T) {
+	data := acceptance.BuildTestData(t, "data.msgraph_resource", "test")
+	r := MSGraphTestDataSource{}
+
+	data.DataSourceTest(t, []resource.TestStep{
+		{
+			Config: r.query(data),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Key("output.%").Exists(),
+			),
+		},
+	})
+}
+
 func (r MSGraphTestDataSource) basic(data acceptance.TestData) string {
 	return fmt.Sprintf(`
 %s
@@ -36,4 +50,21 @@ data "msgraph_resource" "test" {
   url = msgraph_resource.test.id
 }
 `, MSGraphTestResource{}.basic(data))
+}
+
+func (r MSGraphTestDataSource) query(data acceptance.TestData) string {
+	return `
+locals {
+  MicrosoftGraphAppId = "00000003-0000-0000-c000-000000000000"
+}
+
+data "msgraph_resource" "test" {
+  url = "servicePrincipals"
+  query_parameters = {
+    "$filter" = ["appId eq '${local.MicrosoftGraphAppId}'"]
+  }
+  response_export_values = {
+    all = "@"
+  }
+}`
 }

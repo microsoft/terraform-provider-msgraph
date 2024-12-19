@@ -126,7 +126,7 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	responseBody, err := r.client.Create(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), requestBody)
+	responseBody, err := r.client.Create(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), requestBody, clients.DefaultRequestOptions())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create resource", err.Error())
 		return
@@ -146,7 +146,7 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 
 	model.Id = types.StringValue(fmt.Sprintf("%s/%s", model.Url.ValueString(), name))
 
-	responseBody, err = r.client.Read(ctx, model.Id.ValueString(), model.ApiVersion.ValueString())
+	responseBody, err = r.client.Read(ctx, model.Id.ValueString(), model.ApiVersion.ValueString(), clients.DefaultRequestOptions())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to read data source", err.Error())
 		return
@@ -173,13 +173,13 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	_, err = r.client.Update(ctx, model.Id.ValueString(), model.ApiVersion.ValueString(), requestBody)
+	_, err = r.client.Update(ctx, model.Id.ValueString(), model.ApiVersion.ValueString(), requestBody, clients.DefaultRequestOptions())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create resource", err.Error())
 		return
 	}
 
-	responseBody, err := r.client.Read(ctx, model.Id.ValueString(), model.ApiVersion.ValueString())
+	responseBody, err := r.client.Read(ctx, model.Id.ValueString(), model.ApiVersion.ValueString(), clients.DefaultRequestOptions())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to read data source", err.Error())
 		return
@@ -198,7 +198,7 @@ func (r *MSGraphResource) Read(ctx context.Context, req resource.ReadRequest, re
 		model.ApiVersion = types.StringValue("v1.0")
 	}
 
-	responseBody, err := r.client.Read(ctx, model.Id.ValueString(), model.ApiVersion.ValueString())
+	responseBody, err := r.client.Read(ctx, model.Id.ValueString(), model.ApiVersion.ValueString(), clients.DefaultRequestOptions())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to read data source", err.Error())
 		return
@@ -214,7 +214,7 @@ func (r *MSGraphResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	err := r.client.Delete(ctx, model.Id.ValueString(), model.ApiVersion.ValueString())
+	err := r.client.Delete(ctx, model.Id.ValueString(), model.ApiVersion.ValueString(), clients.DefaultRequestOptions())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to delete resource", err.Error())
 		return

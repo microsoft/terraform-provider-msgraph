@@ -64,7 +64,7 @@ func TestAcc_ResourceUpdate(t *testing.T) {
 
 func (M MSGraphTestResource) Exists(ctx context.Context, client *clients.Client, state *terraform.InstanceState) (*bool, error) {
 	apiVersion := state.Attributes["api_version"]
-	_, err := client.MSGraphClient.Read(ctx, state.ID, apiVersion)
+	_, err := client.MSGraphClient.Read(ctx, state.ID, apiVersion, clients.DefaultRequestOptions())
 	if err == nil {
 		b := true
 		return &b, nil

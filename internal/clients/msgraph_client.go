@@ -35,14 +35,20 @@ func NewMSGraphClient(credential azcore.TokenCredential, opt *policy.ClientOptio
 	}, nil
 }
 
-func (client *MSGraphClient) Read(ctx context.Context, url string, apiVersion string) (interface{}, error) {
+func (client *MSGraphClient) Read(ctx context.Context, url string, apiVersion string, options RequestOptions) (interface{}, error) {
 	req, err := runtime.NewRequest(ctx, http.MethodGet, runtime.JoinPaths(client.host, apiVersion, url))
 	if err != nil {
 		return nil, err
 	}
 	reqQP := req.Raw().URL.Query()
+	for key, value := range options.QueryParameters {
+		reqQP.Set(key, value)
+	}
 	req.Raw().URL.RawQuery = reqQP.Encode()
 	req.Raw().Header.Set("Accept", "application/json")
+	for key, value := range options.Headers {
+		req.Raw().Header.Set(key, value)
+	}
 	resp, err := client.pl.Do(req)
 	if err != nil {
 		return nil, err
@@ -58,12 +64,20 @@ func (client *MSGraphClient) Read(ctx context.Context, url string, apiVersion st
 	return responseBody, nil
 }
 
-func (client *MSGraphClient) Create(ctx context.Context, url string, apiVersion string, body interface{}) (interface{}, error) {
+func (client *MSGraphClient) Create(ctx context.Context, url string, apiVersion string, body interface{}, options RequestOptions) (interface{}, error) {
 	req, err := runtime.NewRequest(ctx, http.MethodPost, runtime.JoinPaths(client.host, apiVersion, url))
 	if err != nil {
 		return nil, err
 	}
+	reqQP := req.Raw().URL.Query()
+	for key, value := range options.QueryParameters {
+		reqQP.Set(key, value)
+	}
+	req.Raw().URL.RawQuery = reqQP.Encode()
 	req.Raw().Header.Set("Accept", "application/json")
+	for key, value := range options.Headers {
+		req.Raw().Header.Set(key, value)
+	}
 	if err := runtime.MarshalAsJSON(req, body); err != nil {
 		return nil, err
 	}
@@ -93,12 +107,20 @@ func (client *MSGraphClient) Create(ctx context.Context, url string, apiVersion 
 	return responseBody, nil
 }
 
-func (client *MSGraphClient) Update(ctx context.Context, url string, apiVersion string, body interface{}) (interface{}, error) {
+func (client *MSGraphClient) Update(ctx context.Context, url string, apiVersion string, body interface{}, options RequestOptions) (interface{}, error) {
 	req, err := runtime.NewRequest(ctx, http.MethodPatch, runtime.JoinPaths(client.host, apiVersion, url))
 	if err != nil {
 		return nil, err
 	}
+	reqQP := req.Raw().URL.Query()
+	for key, value := range options.QueryParameters {
+		reqQP.Set(key, value)
+	}
+	req.Raw().URL.RawQuery = reqQP.Encode()
 	req.Raw().Header.Set("Accept", "application/json")
+	for key, value := range options.Headers {
+		req.Raw().Header.Set(key, value)
+	}
 	if err := runtime.MarshalAsJSON(req, body); err != nil {
 		return nil, err
 	}
@@ -128,12 +150,20 @@ func (client *MSGraphClient) Update(ctx context.Context, url string, apiVersion 
 	return responseBody, nil
 }
 
-func (client *MSGraphClient) Delete(ctx context.Context, url string, apiVersion string) error {
+func (client *MSGraphClient) Delete(ctx context.Context, url string, apiVersion string, options RequestOptions) error {
 	req, err := runtime.NewRequest(ctx, http.MethodDelete, runtime.JoinPaths(client.host, apiVersion, url))
 	if err != nil {
 		return err
 	}
+	reqQP := req.Raw().URL.Query()
+	for key, value := range options.QueryParameters {
+		reqQP.Set(key, value)
+	}
+	req.Raw().URL.RawQuery = reqQP.Encode()
 	req.Raw().Header.Set("Accept", "application/json")
+	for key, value := range options.Headers {
+		req.Raw().Header.Set(key, value)
+	}
 	resp, err := client.pl.Do(req)
 	if err != nil {
 		return err

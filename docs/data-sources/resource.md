@@ -53,6 +53,8 @@ output "all" {
 ### Optional
 
 - `api_version` (String) The API version of the data source. The allowed values are `v1.0` and `beta`. Defaults to `v1.0`.
+- `headers` (Map of String) A map of headers to include in the request
+- `query_parameters` (Map of List of String) A map of query parameters to include in the request
 - `response_export_values` (Map of String) A map where the key is the name for the result and the value is a JMESPath query string to filter the response. Here's an example. If it sets to `{"all" = "@", "app_id" = "appId"}`, it will set the following HCL object to the computed property output.
 
 	```text

@@ -28,11 +28,13 @@ type MSGraphDataSource struct {
 
 // MSGraphDataSourceModel describes the data source data model.
 type MSGraphDataSourceModel struct {
-	Id                   types.String      `tfsdk:"id"`
-	ApiVersion           types.String      `tfsdk:"api_version"`
-	Url                  types.String      `tfsdk:"url"`
-	ResponseExportValues map[string]string `tfsdk:"response_export_values"`
-	Output               types.Dynamic     `tfsdk:"output"`
+	Id                   types.String        `tfsdk:"id"`
+	ApiVersion           types.String        `tfsdk:"api_version"`
+	Url                  types.String        `tfsdk:"url"`
+	ResponseExportValues map[string]string   `tfsdk:"response_export_values"`
+	Headers              map[string]string   `tfsdk:"headers"`
+	QueryParameters      map[string][]string `tfsdk:"query_parameters"`
+	Output               types.Dynamic       `tfsdk:"output"`
 }
 
 func (r *MSGraphDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -69,6 +71,20 @@ func (r *MSGraphDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				ElementType:         types.StringType,
 			},
 
+			"headers": schema.MapAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "A map of headers to include in the request",
+			},
+
+			"query_parameters": schema.MapAttribute{
+				ElementType: types.ListType{
+					ElemType: types.StringType,
+				},
+				Optional:            true,
+				MarkdownDescription: "A map of query parameters to include in the request",
+			},
+
 			"output": schema.DynamicAttribute{
 				MarkdownDescription: docstrings.Output(),
 				Computed:            true,
@@ -94,7 +110,7 @@ func (r *MSGraphDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	if model.ApiVersion.ValueString() != "" {
 		apiVersion = model.ApiVersion.ValueString()
 	}
-	responseBody, err := r.client.Read(ctx, model.Url.ValueString(), apiVersion)
+	responseBody, err := r.client.Read(ctx, model.Url.ValueString(), apiVersion, clients.NewRequestOptions(model.Headers, model.QueryParameters))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to read data source", err.Error())
 		return
