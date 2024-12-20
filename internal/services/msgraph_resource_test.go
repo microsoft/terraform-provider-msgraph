@@ -6,6 +6,7 @@ package services_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/azure/terraform-provider-msgraph/internal/acceptance"
@@ -35,7 +36,7 @@ func TestAcc_ResourceBasic(t *testing.T) {
 				check.That(data.ResourceName).Exists(r),
 			),
 		},
-		data.ImportStep(defaultIgnores()...),
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
 	})
 }
 
@@ -51,20 +52,47 @@ func TestAcc_ResourceUpdate(t *testing.T) {
 				check.That(data.ResourceName).Exists(r),
 			),
 		},
-		data.ImportStep(defaultIgnores()...),
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
 		{
 			Config: r.basicUpdate(data),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 			),
 		},
-		data.ImportStep(defaultIgnores()...),
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
 	})
 }
 
-func (M MSGraphTestResource) Exists(ctx context.Context, client *clients.Client, state *terraform.InstanceState) (*bool, error) {
+func TestAcc_ResourceGroupMember(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	importStep := data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...)
+	importStep.ImportStateVerify = false
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.groupMember(data),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+			),
+		},
+		importStep,
+	})
+}
+
+func (r MSGraphTestResource) Exists(ctx context.Context, client *clients.Client, state *terraform.InstanceState) (*bool, error) {
 	apiVersion := state.Attributes["api_version"]
-	_, err := client.MSGraphClient.Read(ctx, state.ID, apiVersion, clients.DefaultRequestOptions())
+	url := state.Attributes["url"]
+
+	checkUrl := ""
+	if !strings.Contains(url, "/$ref") {
+		checkUrl = fmt.Sprintf("%s/%s", url, state.ID)
+	} else {
+		checkUrl = url
+	}
+
+	_, err := client.MSGraphClient.Read(ctx, checkUrl, apiVersion, clients.DefaultRequestOptions())
 	if err == nil {
 		b := true
 		return &b, nil
@@ -74,6 +102,15 @@ func (M MSGraphTestResource) Exists(ctx context.Context, client *clients.Client,
 		return &b, nil
 	}
 	return nil, fmt.Errorf("checking for presence of existing %s(api_version=%s) resource: %w", state.ID, apiVersion, err)
+}
+
+func (r MSGraphTestResource) ImportIdFunc(tfState *terraform.State) (string, error) {
+	state := tfState.RootModule().Resources["msgraph_resource.test"].Primary
+	url := state.Attributes["url"]
+	if !strings.Contains(url, "/$ref") {
+		return fmt.Sprintf("%s/%s", url, state.ID), nil
+	}
+	return strings.ReplaceAll(url, "/$ref", fmt.Sprintf("/%s/$ref", state.ID)), nil
 }
 
 func (r MSGraphTestResource) basic(data acceptance.TestData) string {
@@ -93,6 +130,45 @@ resource "msgraph_resource" "test" {
   url = "applications"
   body = {
     displayName = "Demo App Updated"
+  }
+}
+`
+}
+
+func (r MSGraphTestResource) groupMember(data acceptance.TestData) string {
+	return `
+resource "msgraph_resource" "group" {
+  url = "groups"
+  body = {
+    displayName     = "My Group"
+    mailEnabled     = false
+    mailNickname    = "mygroup"
+    securityEnabled = true
+  }
+}
+
+resource "msgraph_resource" "application" {
+  url = "applications"
+  body = {
+    displayName = "My Application"
+  }
+  response_export_values = {
+    appId = "appId"
+  }
+}
+
+resource "msgraph_resource" "servicePrincipal_application" {
+  url = "servicePrincipals"
+  body = {
+    appId = msgraph_resource.application.output.appId
+  }
+}
+
+resource "msgraph_resource" "test" {
+  # url = "groups/{group-id}/members/$ref"
+  url = "groups/${msgraph_resource.group.id}/members/$ref"
+  body = {
+    "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/${msgraph_resource.servicePrincipal_application.id}"
   }
 }
 `

@@ -39,15 +39,12 @@ resource "msgraph_resource" "servicePrincipal_application" {
   body = {
     appId = msgraph_resource.application.output.appId
   }
-  response_export_values = {
-    id = "id"
-  }
 }
 
 resource "msgraph_resource" "oauth2PermissionGrant" {
   url = "oauth2PermissionGrants"
   body = {
-    clientId    = msgraph_resource.servicePrincipal_application.output.id
+    clientId    = msgraph_resource.servicePrincipal_application.id
     consentType = "AllPrincipals"
     resourceId  = local.MSGraphServicePrincipalId
     scope       = "User.Read"

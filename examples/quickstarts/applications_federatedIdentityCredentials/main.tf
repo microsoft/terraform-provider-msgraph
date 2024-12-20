@@ -18,7 +18,7 @@ resource "msgraph_resource" "application" {
 
 resource "msgraph_resource" "federatedIdentityCredential" {
   # url = "applications/{id}/federatedIdentityCredentials"
-  url = "${msgraph_resource.application.id}/federatedIdentityCredentials"
+  url = "applications/${msgraph_resource.application.id}/federatedIdentityCredentials"
   body = {
     name        = "myFederatedIdentityCredentials"
     description = "My test federated identity credentials"
