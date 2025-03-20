@@ -9,9 +9,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/azure/terraform-provider-msgraph/internal/clients"
-	"github.com/azure/terraform-provider-msgraph/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
+	"github.com/microsoft/terraform-provider-msgraph/internal/provider"
 )
 
 var (

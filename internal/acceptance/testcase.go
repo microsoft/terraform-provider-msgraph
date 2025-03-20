@@ -5,12 +5,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/azure/terraform-provider-msgraph/internal/clients"
-	"github.com/azure/terraform-provider-msgraph/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
+	"github.com/microsoft/terraform-provider-msgraph/internal/provider"
 )
 
 const (

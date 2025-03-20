@@ -1,4 +1,4 @@
-module github.com/azure/terraform-provider-msgraph
+module github.com/microsoft/terraform-provider-msgraph
 
 go 1.22.7
 

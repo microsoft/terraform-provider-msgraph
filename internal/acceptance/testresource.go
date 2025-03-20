@@ -3,8 +3,8 @@ package acceptance
 import (
 	"context"
 
-	"github.com/azure/terraform-provider-msgraph/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
 )
 
 type TestResource interface {

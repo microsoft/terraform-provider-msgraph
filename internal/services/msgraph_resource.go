@@ -9,10 +9,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/azure/terraform-provider-msgraph/internal/clients"
-	"github.com/azure/terraform-provider-msgraph/internal/docstrings"
-	"github.com/azure/terraform-provider-msgraph/internal/dynamic"
-	"github.com/azure/terraform-provider-msgraph/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -24,6 +20,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
+	"github.com/microsoft/terraform-provider-msgraph/internal/docstrings"
+	"github.com/microsoft/terraform-provider-msgraph/internal/dynamic"
+	"github.com/microsoft/terraform-provider-msgraph/internal/utils"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/azure/terraform-provider-msgraph/internal/acceptance"
-	"github.com/azure/terraform-provider-msgraph/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/microsoft/terraform-provider-msgraph/internal/acceptance"
+	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
 )
 
 type thatType struct {

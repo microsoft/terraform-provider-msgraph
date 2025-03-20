@@ -14,10 +14,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/azure/terraform-provider-msgraph/internal/clients"
-	"github.com/azure/terraform-provider-msgraph/internal/myvalidator"
-	"github.com/azure/terraform-provider-msgraph/internal/services"
-	"github.com/azure/terraform-provider-msgraph/version"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -25,6 +21,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
+	"github.com/microsoft/terraform-provider-msgraph/internal/myvalidator"
+	"github.com/microsoft/terraform-provider-msgraph/internal/services"
+	"github.com/microsoft/terraform-provider-msgraph/version"
 )
 
 var _ provider.Provider = &MSGraphProvider{}
