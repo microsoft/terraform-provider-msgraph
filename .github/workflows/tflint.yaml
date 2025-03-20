@@ -19,5 +19,6 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - run: chmod -R +x ./scripts
+      - run: bash scripts/gogetcookie.sh
       - run: make tools
       - run: make tflint
