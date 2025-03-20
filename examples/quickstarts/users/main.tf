@@ -23,13 +23,13 @@ locals {
 resource "msgraph_resource" "user" {
   url = "users"
   body = {
-    accountEnabled = false
-    displayName    = "My User"
-    mailNickname   = "myuser"
+    accountEnabled    = false
+    displayName       = "My User"
+    mailNickname      = "myuser"
     userPrincipalName = "myuser@${local.domain}"
     passwordProfile = {
       forceChangePasswordNextSignIn = true
-      password = "Str0ngP@ssword"
+      password                      = "Str0ngP@ssword"
     }
   }
 }
