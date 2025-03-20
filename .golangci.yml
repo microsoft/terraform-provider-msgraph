@@ -48,3 +48,4 @@ linters-settings:
   nakedret:
     max-func-lines: 30
   predeclared:
+    ignore: new,min,max,len # should we use newer, minimum, and maximum instead?
