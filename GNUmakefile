@@ -1,4 +1,5 @@
 TESTTIMEOUT=300m
+TESTARGS?=
 TEST?=$$(go list ./... |grep -v 'vendor'|grep -v 'examples')
 
 default: testacc
