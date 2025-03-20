@@ -47,7 +47,7 @@ func (r MSGraphTestDataSource) basic(data acceptance.TestData) string {
 %s
 
 data "msgraph_resource" "test" {
-  url = msgraph_resource.test.id
+  url = "applications/${msgraph_resource.test.id}"
 }
 `, MSGraphTestResource{}.basic(data))
 }

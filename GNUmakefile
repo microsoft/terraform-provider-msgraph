@@ -1,3 +1,6 @@
+TESTTIMEOUT=300m
+TEST?=$$(go list ./... |grep -v 'vendor'|grep -v 'examples')
+
 default: testacc
 
 # Run acceptance tests
