@@ -21,8 +21,7 @@ func defaultIgnores() []string {
 	return []string{"body", "output"}
 }
 
-type MSGraphTestResource struct {
-}
+type MSGraphTestResource struct{}
 
 func TestAcc_ResourceBasic(t *testing.T) {
 	data := acceptance.BuildTestData(t, "msgraph_resource", "test")

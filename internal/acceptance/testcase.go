@@ -19,7 +19,6 @@ const (
 )
 
 type TestData struct {
-
 	// RandomInteger is a random integer which is unique to this test case
 	RandomInteger int
 

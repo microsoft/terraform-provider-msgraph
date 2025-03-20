@@ -29,8 +29,7 @@ import (
 
 var _ provider.Provider = &MSGraphProvider{}
 
-type MSGraphProvider struct {
-}
+type MSGraphProvider struct{}
 
 type MSGraphProviderModel struct {
 	ClientID                     types.String `tfsdk:"client_id"`
@@ -68,7 +67,6 @@ func (model MSGraphProviderModel) GetClientId() (*string, error) {
 	if path := model.ClientIDFilePath.ValueString(); path != "" {
 		// #nosec G304
 		fileClientIdRaw, err := os.ReadFile(path)
-
 		if err != nil {
 			return nil, fmt.Errorf("reading Client ID from file %q: %v", path, err)
 		}
@@ -99,7 +97,6 @@ func (model MSGraphProviderModel) GetClientSecret() (*string, error) {
 	if path := model.ClientSecretFilePath.ValueString(); path != "" {
 		// #nosec G304
 		fileSecretRaw, err := os.ReadFile(path)
-
 		if err != nil {
 			return nil, fmt.Errorf("reading Client Secret from file %q: %v", path, err)
 		}
