@@ -27,10 +27,12 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &MSGraphResource{}
-var _ resource.ResourceWithImportState = &MSGraphResource{}
-var _ resource.ResourceWithConfigValidators = &MSGraphResource{}
-var _ resource.ResourceWithModifyPlan = &MSGraphResource{}
+var (
+	_ resource.Resource                     = &MSGraphResource{}
+	_ resource.ResourceWithImportState      = &MSGraphResource{}
+	_ resource.ResourceWithConfigValidators = &MSGraphResource{}
+	_ resource.ResourceWithModifyPlan       = &MSGraphResource{}
+)
 
 func NewMSGraphResource() resource.Resource {
 	return &MSGraphResource{}
@@ -256,7 +258,7 @@ func (r *MSGraphResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	itemUrl := ""
+	var itemUrl string
 	if strings.HasSuffix(model.Url.ValueString(), "/$ref") {
 		itemUrl = strings.ReplaceAll(model.Url.ValueString(), "/$ref", fmt.Sprintf("/%s/$ref", model.Id.ValueString()))
 	} else {
@@ -270,8 +272,7 @@ func (r *MSGraphResource) Delete(ctx context.Context, req resource.DeleteRequest
 }
 
 func (r *MSGraphResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	id := ""
-	url := ""
+	var id, url string
 	if strings.Contains(req.ID, "/$ref") {
 		reqIdWithoutRef := strings.ReplaceAll(req.ID, "/$ref", "")
 		id = reqIdWithoutRef[strings.LastIndex(reqIdWithoutRef, "/")+1:]

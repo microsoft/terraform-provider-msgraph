@@ -21,8 +21,7 @@ func defaultIgnores() []string {
 	return []string{"body", "output"}
 }
 
-type MSGraphTestResource struct {
-}
+type MSGraphTestResource struct{}
 
 func TestAcc_ResourceBasic(t *testing.T) {
 	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
@@ -85,7 +84,7 @@ func (r MSGraphTestResource) Exists(ctx context.Context, client *clients.Client,
 	apiVersion := state.Attributes["api_version"]
 	url := state.Attributes["url"]
 
-	checkUrl := ""
+	var checkUrl string
 	if !strings.Contains(url, "/$ref") {
 		checkUrl = fmt.Sprintf("%s/%s", url, state.ID)
 	} else {

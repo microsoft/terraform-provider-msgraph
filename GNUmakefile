@@ -1,7 +1,7 @@
 default: testacc
 
 # Run acceptance tests
-.PHONY: testacc fmt terrafmt docs tools depscheck tflint test fmtcheck
+.PHONY: testacc fmt terrafmt docs tools depscheck tflint test fmtcheck lint
 testacc:
 	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 120m
 
@@ -33,7 +33,7 @@ tools:
 	go install github.com/katbyte/terrafmt@latest
 	go install golang.org/x/tools/cmd/goimports@latest
 	go install mvdan.cc/gofumpt@latest
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH || $$GOPATH)/bin v1.55.1
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH || $$GOPATH)/bin v1.61.0
 
 depscheck:
 	@echo "==> Checking source code with go mod tidy..."
@@ -57,3 +57,7 @@ fmtcheck:
 	@sh "$(CURDIR)/scripts/gofmtcheck.sh"
 	@sh "$(CURDIR)/scripts/timeouts.sh"
 	@sh "$(CURDIR)/scripts/check-test-package.sh"
+
+lint:
+	@echo "==> Checking source code against linters..."
+	@if command -v golangci-lint; then (golangci-lint run ./...); else ($(GOPATH)/bin/golangci-lint run ./...); fi

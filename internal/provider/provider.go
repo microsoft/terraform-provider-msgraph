@@ -7,9 +7,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/azure/terraform-provider-msgraph/internal/myvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"log"
 	"os"
 	"strings"
@@ -18,19 +15,21 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/azure/terraform-provider-msgraph/internal/clients"
+	"github.com/azure/terraform-provider-msgraph/internal/myvalidator"
 	"github.com/azure/terraform-provider-msgraph/internal/services"
 	"github.com/azure/terraform-provider-msgraph/version"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var _ provider.Provider = &MSGraphProvider{}
 
-type MSGraphProvider struct {
-}
+type MSGraphProvider struct{}
 
 type MSGraphProviderModel struct {
 	ClientID                     types.String `tfsdk:"client_id"`
@@ -68,7 +67,6 @@ func (model MSGraphProviderModel) GetClientId() (*string, error) {
 	if path := model.ClientIDFilePath.ValueString(); path != "" {
 		// #nosec G304
 		fileClientIdRaw, err := os.ReadFile(path)
-
 		if err != nil {
 			return nil, fmt.Errorf("reading Client ID from file %q: %v", path, err)
 		}
@@ -99,7 +97,6 @@ func (model MSGraphProviderModel) GetClientSecret() (*string, error) {
 	if path := model.ClientSecretFilePath.ValueString(); path != "" {
 		// #nosec G304
 		fileSecretRaw, err := os.ReadFile(path)
-
 		if err != nil {
 			return nil, fmt.Errorf("reading Client Secret from file %q: %v", path, err)
 		}

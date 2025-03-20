@@ -2,10 +2,11 @@ package clients
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"net/http"
 )
 
 const (
@@ -89,16 +90,7 @@ func (client *MSGraphClient) Create(ctx context.Context, url string, apiVersion 
 		return nil, runtime.NewResponseError(resp)
 	}
 
-	//pt, err := runtime.NewPoller[interface{}](resp, client.pl, nil)
-	//if err == nil {
-	//	resp, err := pt.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-	//		Frequency: 10 * time.Second,
-	//	})
-	//	if err == nil {
-	//		return resp, nil
-	//	}
-	//	return nil, err
-	//}
+	// TODO: Handle long-running operations if needed
 
 	var responseBody interface{}
 	if err := runtime.UnmarshalAsJSON(resp, &responseBody); err != nil {
@@ -132,16 +124,7 @@ func (client *MSGraphClient) Update(ctx context.Context, url string, apiVersion 
 		return nil, runtime.NewResponseError(resp)
 	}
 
-	//pt, err := runtime.NewPoller[interface{}](resp, client.pl, nil)
-	//if err == nil {
-	//	resp, err := pt.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-	//		Frequency: 10 * time.Second,
-	//	})
-	//	if err == nil {
-	//		return resp, nil
-	//	}
-	//	return nil, err
-	//}
+	// TODO: Handle long-running operations if needed
 
 	var responseBody interface{}
 	if err := runtime.UnmarshalAsJSON(resp, &responseBody); err != nil {
@@ -169,13 +152,7 @@ func (client *MSGraphClient) Delete(ctx context.Context, url string, apiVersion 
 		return err
 	}
 
-	//pt, err := runtime.NewPoller[interface{}](resp, client.pl, nil)
-	//if err == nil {
-	//	_, err := pt.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-	//		Frequency: 10 * time.Second,
-	//	})
-	//	return err
-	//}
+	// TODO: Handle long-running operations if needed
 
 	if !runtime.HasStatusCode(resp, http.StatusNoContent) {
 		return runtime.NewResponseError(resp)
