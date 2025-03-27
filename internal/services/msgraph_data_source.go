@@ -106,7 +106,6 @@ func (r *MSGraphDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	// support pagination
 	apiVersion := "v1.0"
 	if model.ApiVersion.ValueString() != "" {
 		apiVersion = model.ApiVersion.ValueString()
