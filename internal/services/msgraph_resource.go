@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -133,6 +134,12 @@ func (r *MSGraphResource) ModifyPlan(ctx context.Context, request resource.Modif
 	if strings.Contains(plan.Url.ValueString(), "/$ref") {
 		if !dynamic.SemanticallyEqual(plan.Body, state.Body) {
 			response.RequiresReplace.Append(path.Root("body"))
+		}
+		if !reflect.DeepEqual(plan.ResponseExportValues, state.ResponseExportValues) {
+			response.RequiresReplace.Append(path.Root("response_export_values"))
+		}
+		if !reflect.DeepEqual(plan.ApiVersion, state.ApiVersion) {
+			response.RequiresReplace.Append(path.Root("api_version"))
 		}
 	}
 }
