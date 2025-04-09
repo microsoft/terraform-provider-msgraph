@@ -77,7 +77,7 @@ To learn more about JMESPath, visit [JMESPath](https://jmespath.org/).
 
 ### Read-Only
 
-- `id` (String) The ID of the MSGraph resource
+- `id` (String) The ID of the resource. Normally, it is in the format of UUID if it is a single resource. If it is a collection resource, it will be the URL of the collection.
 - `output` (Dynamic) The output HCL object containing the properties specified in `response_export_values`. Here are some examples to use the values.
 
 	```terraform

@@ -23,6 +23,7 @@ func TestAcc_DataSourceBasic(t *testing.T) {
 			Config: r.basic(data),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Key("output.%").Exists(),
+				check.That(data.ResourceName).Key("id").IsUUID(),
 			),
 		},
 	})

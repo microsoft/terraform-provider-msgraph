@@ -33,6 +33,7 @@ func TestAcc_ResourceBasic(t *testing.T) {
 			Config: r.basic(data),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
 			),
 		},
 		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
@@ -74,6 +75,8 @@ func TestAcc_ResourceGroupMember(t *testing.T) {
 			Config: r.groupMember(data),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+				check.That(data.ResourceName).Key("id").MatchesOtherKey(check.That("msgraph_resource.servicePrincipal_application").Key("id")),
 			),
 		},
 		importStep,

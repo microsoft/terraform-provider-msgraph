@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/microsoft/terraform-provider-msgraph/internal/acceptance"
@@ -119,6 +120,32 @@ func (t thatWithKeyType) IsJson() resource.TestCheckFunc {
 		var out interface{}
 		if err := json.Unmarshal([]byte(value), &out); err != nil {
 			return fmt.Errorf("deserializing the value for %q (%q) to json: %+v", t.key, value, err)
+		}
+
+		return nil
+	}
+}
+
+func (t thatWithKeyType) IsUUID() resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, exists := s.RootModule().Resources[t.resourceName]
+		if !exists {
+			return fmt.Errorf("%q was not found in the state", t.resourceName)
+		}
+
+		value, exists := rs.Primary.Attributes[t.key]
+		if !exists {
+			return fmt.Errorf("the value %q does not exist within %q", t.key, t.resourceName)
+		}
+
+		if value == "" {
+			return fmt.Errorf("the value for %q was empty", t.key)
+		}
+
+		// Check if the value is a valid UUID
+		_, err := uuid.Parse(value)
+		if err != nil {
+			return fmt.Errorf("the value for %q (%q) is not a valid UUID: %+v", t.key, value, err)
 		}
 
 		return nil

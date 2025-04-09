@@ -49,7 +49,7 @@ func (r *MSGraphDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: "The ID of the MSGraph resource",
+				MarkdownDescription: "The ID of the resource. Normally, it is in the format of UUID if it is a single resource. If it is a collection resource, it will be the URL of the collection.",
 				Computed:            true,
 			},
 
@@ -116,7 +116,18 @@ func (r *MSGraphDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	model.Id = model.Url
+	responseId := model.Url.ValueString()
+	if responseBody != nil {
+		if responseMap, ok := responseBody.(map[string]interface{}); ok {
+			if idValue, ok := responseMap["id"]; ok && idValue != nil {
+				if idString, ok := idValue.(string); ok {
+					responseId = idString
+				}
+			}
+		}
+	}
+
+	model.Id = types.StringValue(responseId)
 	model.Output = types.DynamicValue(buildOutputFromBody(responseBody, model.ResponseExportValues))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
