@@ -72,7 +72,7 @@ func main() {
 		resourceTypeName := strings.Split(resourceTypeDir.Name(), "@")[0]
 		outputFile := path.Join(*outputDir, resourceTypeName+".md")
 		// #nosec G306
-		err = os.WriteFile(outputFile, []byte(content), 0644)
+		err = os.WriteFile(outputFile, []byte(content), 0o644)
 		if err != nil {
 			log.Printf("Error writing documentation for %s: %s", resourceTypeDir.Name(), err)
 		}
