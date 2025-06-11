@@ -19,9 +19,7 @@ type ResourceType struct {
 	UrlValue     string `json:"urlValue"`
 }
 
-var (
-	resourceTypes map[string]ResourceType
-)
+var resourceTypes map[string]ResourceType
 
 func init() {
 	var resourceTypeItems []ResourceType
