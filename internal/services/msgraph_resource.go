@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -205,7 +206,7 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	if strings.HasSuffix(model.Url.ValueString(), "/$ref") { // extract the id from the response body
+	if strings.HasSuffix(model.Url.ValueString(), "/$ref") {
 		if requestMap, ok := requestBody.(map[string]interface{}); ok {
 			if idValue, ok := requestMap["@odata.id"]; ok {
 				if idString, ok := idValue.(string); ok {
@@ -225,18 +226,39 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 				}
 			}
 		}
-
 		model.Id = types.StringValue(responseId)
-		options = clients.NewRequestOptions(nil, AsMapOfLists(model.ReadQueryParameters))
-		responseBody, err = r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
-		if err != nil {
+	}
+
+	// Polling logic starts here
+	pollTimeout := 60 * time.Second
+	pollInterval := 3 * time.Second
+	startTime := time.Now()
+
+	options = clients.NewRequestOptions(nil, AsMapOfLists(model.ReadQueryParameters))
+	var readBody interface{}
+
+	for {
+		readBody, err = r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
+		if err == nil {
+			break
+		}
+
+		if !utils.ResponseErrorWasNotFound(err) {
+			// Non-404 error: fail immediately
 			resp.Diagnostics.AddError("Failed to read data source", err.Error())
 			return
 		}
+
+		if time.Since(startTime) > pollTimeout {
+			resp.Diagnostics.AddError("Timed out waiting for resource to become available", err.Error())
+			return
+		}
+
+		tflog.Debug(ctx, fmt.Sprintf("Resource not yet available. Retrying in %s...", pollInterval))
+		time.Sleep(pollInterval)
 	}
 
-	model.Output = types.DynamicValue(buildOutputFromBody(responseBody, model.ResponseExportValues))
-
+	model.Output = types.DynamicValue(buildOutputFromBody(readBody, model.ResponseExportValues))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
 
