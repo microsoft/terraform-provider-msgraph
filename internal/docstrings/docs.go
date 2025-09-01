@@ -7,10 +7,11 @@ func ApiVersion() string {
 }
 
 func Url(kind string) string {
-	if kind == "data" {
+	switch kind {
+	case "data":
 		return "The URL of the data source. It supports both collection URL which is used to list resources, for example `/users`, and item URL which is used to read an individual resource, for example `/users/{id}`."
-	}
-	return `The URL which is used to manage the resource. It supports two types of URLs:  
+	case "resource":
+		return `The URL which is used to manage the resource. It supports two types of URLs:  
   - Collection URL which is used to make a POST request to create a new resource, for example, "/users", it must support the following operations:
 	- Create a new resource: POST "/users"
     - Read an existing resource: GET "/users/{id}"
@@ -23,6 +24,18 @@ func Url(kind string) string {
   More information about the Microsoft Graph API can be found at [Microsoft Graph API](https://docs.microsoft.com/en-us/graph/overview).  
   And there are some [examples](https://github.com/microsoft/terraform-provider-msgraph/tree/main/examples/quickstarts) to help you get started.
 `
+	case "update_resource":
+		return `The item URL of the existing resource to update, for example "/users/{id}".
+
+	This resource performs PATCH requests against the item URL and expects the following operations to be supported by the API endpoint:
+		- Read an existing resource: GET "/users/{id}"
+		- Update an existing resource: PATCH "/users/{id}"
+
+	More information about the Microsoft Graph API can be found at [Microsoft Graph API](https://docs.microsoft.com/en-us/graph/overview).  
+	There are also [examples](https://github.com/microsoft/terraform-provider-msgraph/tree/main/examples/quickstarts) to help you get started.`
+	default:
+		return ""
+	}
 }
 
 func Body() string {
