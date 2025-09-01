@@ -34,7 +34,7 @@ func unmarshalBody(input types.Dynamic, out interface{}) error {
 	}
 	data, err := dynamic.ToJSON(input)
 	if err != nil {
-		return fmt.Errorf(`invalid dynamic value: value: %s, err: %+v`, input.String(), err)
+		return fmt.Errorf(`invalid dynamic value: %s, err: %+v`, input.String(), err)
 	}
 	if err = json.Unmarshal(data, &out); err != nil {
 		return fmt.Errorf(`unmarshaling failed: value: %s, err: %+v`, string(data), err)

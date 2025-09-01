@@ -22,7 +22,7 @@ func TestAcc_UpdateResourceBasic(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.basic(data, "Demo App Updated"),
+			Config: r.basic("Demo App Updated"),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
@@ -38,13 +38,13 @@ func TestAcc_UpdateResourceUpdate(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.basic(data, "Demo App Updated"),
+			Config: r.basic("Demo App Updated"),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 			),
 		},
 		{
-			Config: r.basic(data, "Demo App Updated Again"),
+			Config: r.basic("Demo App Updated Again"),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 			),
@@ -68,7 +68,7 @@ func (r MSGraphTestUpdateResource) Exists(ctx context.Context, client *clients.C
 	return nil, fmt.Errorf("checking for presence of existing %s(api_version=%s) resource: %w", state.ID, apiVersion, err)
 }
 
-func (r MSGraphTestUpdateResource) basic(data acceptance.TestData, displayName string) string {
+func (r MSGraphTestUpdateResource) basic(displayName string) string {
 	return fmt.Sprintf(`
 resource "msgraph_resource" "application" {
   url = "applications"

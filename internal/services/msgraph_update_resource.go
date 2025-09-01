@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+ 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -138,7 +139,6 @@ func (r *MSGraphUpdateResource) ModifyPlan(ctx context.Context, request resource
 	if response.Diagnostics.Append(request.State.Get(ctx, &state)...); response.Diagnostics.HasError() {
 		return
 	}
-
 }
 
 func (r *MSGraphUpdateResource) CreateUpdate(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, diagnostics *diag.Diagnostics) {
@@ -247,5 +247,4 @@ func (r *MSGraphUpdateResource) Read(ctx context.Context, req resource.ReadReque
 }
 
 func (r *MSGraphUpdateResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-
 }
