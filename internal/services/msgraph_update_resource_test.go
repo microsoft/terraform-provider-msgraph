@@ -71,21 +71,21 @@ func (r MSGraphTestUpdateResource) Exists(ctx context.Context, client *clients.C
 func (r MSGraphTestUpdateResource) basic(data acceptance.TestData, displayName string) string {
 	return fmt.Sprintf(`
 resource "msgraph_resource" "application" {
-	url = "applications"
-	body = {
-		displayName = "Demo App"
-	}
+  url = "applications"
+  body = {
+    displayName = "Demo App"
+  }
 
   lifecycle {
-	ignore_changes = [ body.displayName ]
+    ignore_changes = [body.displayName]
   }
 }
 
 resource "msgraph_update_resource" "test" {
-	url = "applications/${msgraph_resource.application.id}"
-	body = {
-		displayName = "%s"
-	}
+  url = "applications/${msgraph_resource.application.id}"
+  body = {
+    displayName = "%s"
+  }
 }
 `, displayName)
 }
