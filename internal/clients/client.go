@@ -75,6 +75,15 @@ func (client *Client) Build(ctx context.Context, o *Option) error {
 	allowedQueryParams := []string{
 		"api-version",
 		"$skipToken",
+		"$select",
+		"$filter",
+		"$expand",
+		"$count",
+		"$top",
+		"$orderby",
+		"$search",
+		"$skip",
+		"$format",
 	}
 
 	msgraphClient, err := NewMSGraphClient(o.Cred, &policy.ClientOptions{
