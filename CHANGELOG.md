@@ -3,7 +3,8 @@
 FEATURES:
 - **New Resource**: msgraph_update_resource
 
-
+BUG FIXES:
+- Fixed an issue with the `msgraph_resource` resource could not detect resource drift.
 
 ## 0.1.0
 
