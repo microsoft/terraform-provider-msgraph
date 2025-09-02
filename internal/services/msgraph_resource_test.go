@@ -196,16 +196,16 @@ resource "msgraph_resource" "test" {
 func (r MSGraphTestResource) withRetry(data acceptance.TestData) string {
 	return `
 resource "msgraph_resource" "test" {
-	url = "applications"
-	body = {
-		displayName = "Demo App Retry"
-	}
-	retry = {
-		error_message_regex = [
-			"temporary error",
-			".*throttl.*",
-		]
-	}
+  url = "applications"
+  body = {
+    displayName = "Demo App Retry"
+  }
+  retry = {
+    error_message_regex = [
+      "temporary error",
+      ".*throttl.*",
+    ]
+  }
 }
 `
 }

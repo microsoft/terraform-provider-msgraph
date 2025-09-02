@@ -111,16 +111,16 @@ data "msgraph_resource" "test" {
 func (r MSGraphTestDataSource) withRetry(data acceptance.TestData) string {
 	return `
 data "msgraph_resource" "test" {
-	url = "groups"
-	retry = {
-		error_message_regex = [
-			"temporary error",
-			".*throttl.*",
-		]
-	}
-	response_export_values = {
-		all = "@"
-	}
+  url = "groups"
+  retry = {
+    error_message_regex = [
+      "temporary error",
+      ".*throttl.*",
+    ]
+  }
+  response_export_values = {
+    all = "@"
+  }
 }
 `
 }
