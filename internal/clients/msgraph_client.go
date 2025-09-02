@@ -38,6 +38,10 @@ func NewMSGraphClient(credential azcore.TokenCredential, opt *policy.ClientOptio
 }
 
 func (client *MSGraphClient) Read(ctx context.Context, url string, apiVersion string, options RequestOptions) (interface{}, error) {
+	// apply per-request retry options via context
+	if options.RetryOptions != nil {
+		ctx = policy.WithRetryOptions(ctx, *options.RetryOptions)
+	}
 	req, err := runtime.NewRequest(ctx, http.MethodGet, runtime.JoinPaths(client.host, apiVersion, url))
 	if err != nil {
 		return nil, err
@@ -93,6 +97,9 @@ func (client *MSGraphClient) List(ctx context.Context, url string, apiVersion st
 			return true
 		},
 		Fetcher: func(ctx context.Context, current *interface{}) (interface{}, error) {
+			if options.RetryOptions != nil {
+				ctx = policy.WithRetryOptions(ctx, *options.RetryOptions)
+			}
 			var request *policy.Request
 			if current == nil {
 				req, err := runtime.NewRequest(ctx, http.MethodGet, runtime.JoinPaths(client.host, apiVersion, url))
@@ -168,6 +175,9 @@ func (client *MSGraphClient) List(ctx context.Context, url string, apiVersion st
 }
 
 func (client *MSGraphClient) Create(ctx context.Context, url string, apiVersion string, body interface{}, options RequestOptions) (interface{}, error) {
+	if options.RetryOptions != nil {
+		ctx = policy.WithRetryOptions(ctx, *options.RetryOptions)
+	}
 	req, err := runtime.NewRequest(ctx, http.MethodPost, runtime.JoinPaths(client.host, apiVersion, url))
 	if err != nil {
 		return nil, err
@@ -202,6 +212,9 @@ func (client *MSGraphClient) Create(ctx context.Context, url string, apiVersion 
 }
 
 func (client *MSGraphClient) Update(ctx context.Context, url string, apiVersion string, body interface{}, options RequestOptions) (interface{}, error) {
+	if options.RetryOptions != nil {
+		ctx = policy.WithRetryOptions(ctx, *options.RetryOptions)
+	}
 	req, err := runtime.NewRequest(ctx, http.MethodPatch, runtime.JoinPaths(client.host, apiVersion, url))
 	if err != nil {
 		return nil, err
@@ -236,6 +249,9 @@ func (client *MSGraphClient) Update(ctx context.Context, url string, apiVersion 
 }
 
 func (client *MSGraphClient) Delete(ctx context.Context, url string, apiVersion string, options RequestOptions) error {
+	if options.RetryOptions != nil {
+		ctx = policy.WithRetryOptions(ctx, *options.RetryOptions)
+	}
 	req, err := runtime.NewRequest(ctx, http.MethodDelete, runtime.JoinPaths(client.host, apiVersion, url))
 	if err != nil {
 		return err

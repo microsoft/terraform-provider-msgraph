@@ -19,6 +19,7 @@ import (
 	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
 	"github.com/microsoft/terraform-provider-msgraph/internal/docstrings"
 	"github.com/microsoft/terraform-provider-msgraph/internal/dynamic"
+	"github.com/microsoft/terraform-provider-msgraph/internal/retry"
 	"github.com/microsoft/terraform-provider-msgraph/internal/utils"
 )
 
@@ -51,6 +52,7 @@ type MSGraphUpdateResourceModel struct {
 	UpdateQueryParameters types.Map         `tfsdk:"update_query_parameters"`
 	ReadQueryParameters   types.Map         `tfsdk:"read_query_parameters"`
 	ResponseExportValues  map[string]string `tfsdk:"response_export_values"`
+	Retry                 retry.Value       `tfsdk:"retry"`
 	Output                types.Dynamic     `tfsdk:"output"`
 }
 
@@ -115,6 +117,8 @@ func (r *MSGraphUpdateResource) Schema(ctx context.Context, req resource.SchemaR
 				ElementType:         types.StringType,
 			},
 
+			"retry": retry.Schema(ctx),
+
 			"output": schema.DynamicAttribute{
 				MarkdownDescription: docstrings.Output(),
 				Computed:            true,
@@ -161,14 +165,20 @@ func (r *MSGraphUpdateResource) CreateUpdate(ctx context.Context, plan tfsdk.Pla
 		return
 	}
 
-	options := clients.NewRequestOptions(nil, AsMapOfLists(model.UpdateQueryParameters))
+	options := clients.RequestOptions{
+		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.UpdateQueryParameters)),
+		RetryOptions:    clients.NewRetryOptions(model.Retry),
+	}
 	_, err = r.client.Update(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), requestBody, options)
 	if err != nil {
 		diagnostics.AddError("Failed to create resource", err.Error())
 		return
 	}
 
-	options = clients.NewRequestOptions(nil, AsMapOfLists(model.ReadQueryParameters))
+	options = clients.RequestOptions{
+		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
+		RetryOptions:    clients.NewRetryOptions(model.Retry),
+	}
 	responseBody, err := r.client.Read(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), options)
 	if err != nil {
 		diagnostics.AddError("Failed to read data source", err.Error())
@@ -197,7 +207,10 @@ func (r *MSGraphUpdateResource) Read(ctx context.Context, req resource.ReadReque
 		model.ApiVersion = types.StringValue("v1.0")
 	}
 
-	options := clients.NewRequestOptions(nil, AsMapOfLists(model.ReadQueryParameters))
+	options := clients.RequestOptions{
+		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
+		RetryOptions:    clients.NewRetryOptions(model.Retry),
+	}
 	responseBody, err := r.client.Read(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), options)
 	if err != nil {
 		if utils.ResponseErrorWasNotFound(err) {

@@ -52,6 +52,21 @@ func TestAcc_UpdateResourceUpdate(t *testing.T) {
 	})
 }
 
+func TestAcc_UpdateResourceRetry(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_update_resource", "test")
+
+	r := MSGraphTestUpdateResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.withRetry(),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+			),
+		},
+	})
+}
+
 func (r MSGraphTestUpdateResource) Exists(ctx context.Context, client *clients.Client, state *terraform.InstanceState) (*bool, error) {
 	apiVersion := state.Attributes["api_version"]
 	url := state.Attributes["url"]
@@ -88,4 +103,32 @@ resource "msgraph_update_resource" "test" {
   }
 }
 `, displayName)
+}
+
+func (r MSGraphTestUpdateResource) withRetry() string {
+	return `
+resource "msgraph_resource" "application" {
+  url = "applications"
+  body = {
+    displayName = "Demo App"
+  }
+
+  lifecycle {
+    ignore_changes = [body.displayName]
+  }
+}
+
+resource "msgraph_update_resource" "test" {
+  url = "applications/${msgraph_resource.application.id}"
+  body = {
+    displayName = "Demo App Updated With Retry"
+  }
+  retry = {
+    error_message_regex = [
+      ".*throttl.*",
+      "temporary error",
+    ]
+  }
+}
+`
 }
