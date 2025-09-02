@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package provider
 
 import (
@@ -437,6 +434,7 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 func (p *MSGraphProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		services.NewMSGraphResource,
+		services.NewMSGraphUpdateResource,
 	}
 }
 
