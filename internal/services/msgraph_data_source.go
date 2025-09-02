@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
 	"github.com/microsoft/terraform-provider-msgraph/internal/docstrings"
+	"github.com/microsoft/terraform-provider-msgraph/internal/retry"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -35,6 +36,7 @@ type MSGraphDataSourceModel struct {
 	ResponseExportValues map[string]string `tfsdk:"response_export_values"`
 	Headers              types.Map         `tfsdk:"headers"`
 	QueryParameters      types.Map         `tfsdk:"query_parameters"`
+	Retry                retry.Value       `tfsdk:"retry"`
 	Output               types.Dynamic     `tfsdk:"output"`
 }
 
@@ -86,6 +88,8 @@ func (r *MSGraphDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				MarkdownDescription: "A map of query parameters to include in the request",
 			},
 
+			"retry": retry.Schema(ctx),
+
 			"output": schema.DynamicAttribute{
 				MarkdownDescription: docstrings.Output(),
 				Computed:            true,
@@ -111,7 +115,10 @@ func (r *MSGraphDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		apiVersion = model.ApiVersion.ValueString()
 	}
 
-	options := clients.NewRequestOptions(AsMapOfString(model.Headers), AsMapOfLists(model.QueryParameters))
+	options := clients.RequestOptions{
+		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.QueryParameters)),
+		RetryOptions:    clients.NewRetryOptions(model.Retry),
+	}
 	responseBody, err := r.client.Read(ctx, model.Url.ValueString(), apiVersion, options)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to read data source", err.Error())

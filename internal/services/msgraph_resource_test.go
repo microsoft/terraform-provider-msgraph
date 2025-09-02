@@ -18,7 +18,7 @@ import (
 )
 
 func defaultIgnores() []string {
-	return []string{"body", "output"}
+	return []string{"body", "output", "retry"}
 }
 
 type MSGraphTestResource struct{}
@@ -80,6 +80,23 @@ func TestAcc_ResourceGroupMember(t *testing.T) {
 			),
 		},
 		importStep,
+	})
+}
+
+func TestAcc_ResourceRetry(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.withRetry(data),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+		},
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
 	})
 }
 
@@ -172,6 +189,23 @@ resource "msgraph_resource" "test" {
   body = {
     "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/${msgraph_resource.servicePrincipal_application.id}"
   }
+}
+`
+}
+
+func (r MSGraphTestResource) withRetry(data acceptance.TestData) string {
+	return `
+resource "msgraph_resource" "test" {
+	url = "applications"
+	body = {
+		displayName = "Demo App Retry"
+	}
+	retry = {
+		error_message_regex = [
+			"temporary error",
+			".*throttl.*",
+		]
+	}
 }
 `
 }

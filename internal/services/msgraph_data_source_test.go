@@ -57,6 +57,20 @@ func TestAcc_DataSourceList(t *testing.T) {
 	})
 }
 
+func TestAcc_DataSourceRetry(t *testing.T) {
+	data := acceptance.BuildTestData(t, "data.msgraph_resource", "test")
+	r := MSGraphTestDataSource{}
+
+	data.DataSourceTest(t, []resource.TestStep{
+		{
+			Config: r.withRetry(data),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Key("output.%").Exists(),
+			),
+		},
+	})
+}
+
 func (r MSGraphTestDataSource) basic(data acceptance.TestData) string {
 	return fmt.Sprintf(`
 %s
@@ -92,4 +106,22 @@ data "msgraph_resource" "test" {
     all = "@"
   }
 }`
+}
+
+
+func (r MSGraphTestDataSource) withRetry(data acceptance.TestData) string {
+		return `
+data "msgraph_resource" "test" {
+	url = "groups"
+	retry = {
+		error_message_regex = [
+			"temporary error",
+			".*throttl.*",
+		]
+	}
+	response_export_values = {
+		all = "@"
+	}
+}
+`
 }
