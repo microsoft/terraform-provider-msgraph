@@ -3,6 +3,7 @@ package services_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -52,6 +53,45 @@ func TestAcc_UpdateResourceUpdate(t *testing.T) {
 	})
 }
 
+func TestAcc_UpdateResourceTimeouts_Update(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_update_resource", "test")
+	r := MSGraphTestUpdateResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.withUpdateTimeout("Demo App"),
+		},
+		{
+			Config:      r.withUpdateTimeout("Demo App Updated"),
+			ExpectError: regexp.MustCompile(`context deadline exceeded`),
+		},
+	})
+}
+
+func TestAcc_UpdateResourceTimeouts_Create(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_update_resource", "test")
+	r := MSGraphTestUpdateResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config:      r.withCreateTimeout("Demo App Updated"),
+			ExpectError: regexp.MustCompile(`context deadline exceeded`),
+		},
+	})
+}
+
+func TestAcc_UpdateResourceTimeouts_Read(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_update_resource", "test")
+	r := MSGraphTestUpdateResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config:      r.withReadTimeout("Demo App Updated"),
+			ExpectError: regexp.MustCompile(`context deadline exceeded`),
+		},
+	})
+}
+
 func (r MSGraphTestUpdateResource) Exists(ctx context.Context, client *clients.Client, state *terraform.InstanceState) (*bool, error) {
 	apiVersion := state.Attributes["api_version"]
 	url := state.Attributes["url"]
@@ -88,4 +128,69 @@ resource "msgraph_update_resource" "test" {
   }
 }
 `, displayName)
+}
+
+func (r MSGraphTestUpdateResource) withUpdateTimeout(displayName string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "msgraph_update_resource" "test" {
+  url = "applications/${msgraph_resource.application.id}"
+  body = {
+    displayName = "%s"
+  }
+  timeouts {
+    update = "1ns"
+  }
+}
+`, MSGraphTestUpdateResource{}.applicationOnly(), displayName)
+}
+
+func (r MSGraphTestUpdateResource) withReadTimeout(displayName string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "msgraph_update_resource" "test" {
+  url = "applications/${msgraph_resource.application.id}"
+  body = {
+    displayName = "%s"
+  }
+  timeouts {
+    read = "1ns"
+  }
+}
+`, MSGraphTestUpdateResource{}.applicationOnly(), displayName)
+}
+
+func (r MSGraphTestUpdateResource) withCreateTimeout(displayName string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "msgraph_update_resource" "test" {
+  url = "applications/${msgraph_resource.application.id}"
+  body = {
+    displayName = "%s"
+  }
+  timeouts {
+    create = "1ns"
+  }
+}
+`, MSGraphTestUpdateResource{}.applicationOnly(), displayName)
+}
+
+// applicationOnly returns just the application resource to be used for composing
+// different update resource configurations.
+func (r MSGraphTestUpdateResource) applicationOnly() string {
+	return `
+resource "msgraph_resource" "application" {
+  url = "applications"
+  body = {
+    displayName = "Demo App"
+  }
+
+  lifecycle {
+    ignore_changes = [body.displayName]
+  }
+}
+`
 }

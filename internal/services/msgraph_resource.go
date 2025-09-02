@@ -7,7 +7,9 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -58,6 +60,7 @@ type MSGraphResourceModel struct {
 	DeleteQueryParameters types.Map         `tfsdk:"delete_query_parameters"`
 	ResponseExportValues  map[string]string `tfsdk:"response_export_values"`
 	Output                types.Dynamic     `tfsdk:"output"`
+	Timeouts              timeouts.Value    `tfsdk:"timeouts"`
 }
 
 func (r *MSGraphResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -141,6 +144,10 @@ func (r *MSGraphResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Computed:            true,
 			},
 		},
+
+		Blocks: map[string]schema.Block{
+			"timeouts": timeouts.BlockAll(ctx),
+		},
 	}
 }
 
@@ -183,6 +190,11 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 	if resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
+
+	createTimeout, diags := model.Timeouts.Create(ctx, 30*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	data, err := dynamic.ToJSON(model.Body)
 	if err != nil {
@@ -243,6 +255,11 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	updateTimeout, diags := model.Timeouts.Update(ctx, 30*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
 	data, err := dynamic.ToJSON(model.Body)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to marshal body", err.Error())
@@ -277,6 +294,12 @@ func (r *MSGraphResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	// Apply read timeout (default 5m if not configured)
+	readTimeout, diags := model.Timeouts.Read(ctx, 5*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
 	if model.ApiVersion.ValueString() == "" {
 		model.ApiVersion = types.StringValue("v1.0")
 	}
@@ -303,6 +326,11 @@ func (r *MSGraphResource) Delete(ctx context.Context, req resource.DeleteRequest
 	if resp.Diagnostics.Append(req.State.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
+
+	deleteTimeout, diags := model.Timeouts.Delete(ctx, 30*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	var itemUrl string
 	if strings.HasSuffix(model.Url.ValueString(), "/$ref") {
@@ -353,6 +381,14 @@ func (r *MSGraphResource) ImportState(ctx context.Context, req resource.ImportSt
 		UpdateQueryParameters: types.MapNull(types.ListType{ElemType: types.StringType}),
 		ReadQueryParameters:   types.MapNull(types.ListType{ElemType: types.StringType}),
 		DeleteQueryParameters: types.MapNull(types.ListType{ElemType: types.StringType}),
+		Timeouts: timeouts.Value{
+			Object: types.ObjectNull(map[string]attr.Type{
+				"create": types.StringType,
+				"update": types.StringType,
+				"read":   types.StringType,
+				"delete": types.StringType,
+			}),
+		},
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }

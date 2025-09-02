@@ -3,7 +3,8 @@
 FEATURES:
 - **New Resource**: msgraph_update_resource
 
-
+ENHANCEMENTS:
+- `msgraph` resource and data source: support for `timeouts` configuration block
 
 ## 0.1.0
 

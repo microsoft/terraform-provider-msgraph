@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -33,6 +35,7 @@ type MSGraphDataSourceModel struct {
 	Headers              types.Map         `tfsdk:"headers"`
 	QueryParameters      types.Map         `tfsdk:"query_parameters"`
 	Output               types.Dynamic     `tfsdk:"output"`
+	Timeouts             timeouts.Value    `tfsdk:"timeouts"`
 }
 
 func (r *MSGraphDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -88,6 +91,12 @@ func (r *MSGraphDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				Computed:            true,
 			},
 		},
+
+		Blocks: map[string]schema.Block{
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Read: true,
+			}),
+		},
 	}
 }
 
@@ -102,6 +111,11 @@ func (r *MSGraphDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	if resp.Diagnostics.Append(req.Config.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
+
+	readTimeout, diags := model.Timeouts.Read(ctx, 5*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	ctx, cancelRead := context.WithTimeout(ctx, readTimeout)
+	defer cancelRead()
 
 	apiVersion := "v1.0"
 	if model.ApiVersion.ValueString() != "" {
