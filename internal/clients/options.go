@@ -20,6 +20,7 @@ var DefaultRetryableStatusCodes = []int{
 	http.StatusServiceUnavailable,  // 503
 	http.StatusGatewayTimeout,      // 504
 }
+
 var DefaultRetryableReadAfterCreateStatusCodes = []int{
 	http.StatusNotFound,  // 404
 	http.StatusForbidden, // 403

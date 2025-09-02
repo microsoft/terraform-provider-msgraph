@@ -149,14 +149,12 @@ func (t Type) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Va
 	val := map[string]tftypes.Value{}
 
 	err := in.As(&val)
-
 	if err != nil {
 		return nil, err
 	}
 
 	for k, v := range val {
 		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
-
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +193,6 @@ func (v Value) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
 		vals := make(map[string]tftypes.Value, 5)
 
 		val, err = v.ErrorMessageRegex.ToTerraformValue(ctx)
-
 		if err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
 		}

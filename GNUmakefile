@@ -11,6 +11,13 @@ testacc: fmtcheck
 
 
 fmt:
+	@echo "==> Fixing source code with gofumpt..."
+	# Ensure files comply with gofumpt (stricter gofmt)
+	@if command -v gofumpt >/dev/null 2>&1; then \
+		find . -name '*.go' | grep -v vendor | xargs gofumpt -w; \
+	else \
+		echo "gofumpt not found. Run 'make tools' to install it (go install mvdan.cc/gofumpt@latest)"; \
+	fi
 	@echo "==> Fixing source code with gofmt..."
 	# This logic should match the search logic in scripts/gofmtcheck.sh
 	find . -name '*.go' | grep -v vendor | xargs gofmt -s -w

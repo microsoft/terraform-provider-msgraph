@@ -108,9 +108,8 @@ data "msgraph_resource" "test" {
 }`
 }
 
-
 func (r MSGraphTestDataSource) withRetry(data acceptance.TestData) string {
-		return `
+	return `
 data "msgraph_resource" "test" {
 	url = "groups"
 	retry = {
