@@ -6,6 +6,9 @@ FEATURES:
 ENHANCEMENTS:
 - `msgraph` resource and data source: support for `timeouts` configuration block
 
+BUG FIXES:
+- Fixed an issue with the `msgraph_resource` resource could not detect resource drift.
+
 ## 0.1.0
 
 FEATURES:

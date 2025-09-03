@@ -304,21 +304,57 @@ func (r *MSGraphResource) Read(ctx context.Context, req resource.ReadRequest, re
 		model.ApiVersion = types.StringValue("v1.0")
 	}
 
-	if !strings.HasSuffix(model.Url.ValueString(), "/$ref") {
-		options := clients.NewRequestOptions(nil, AsMapOfLists(model.ReadQueryParameters))
-		responseBody, err := r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
-		if err != nil {
-			if utils.ResponseErrorWasNotFound(err) {
-				tflog.Info(ctx, fmt.Sprintf("Error reading %q - removing from state", model.Id.ValueString()))
-				resp.State.RemoveResource(ctx)
-				return
-			}
-			resp.Diagnostics.AddError("Failed to read data source", err.Error())
+	state := model
+
+	if strings.HasSuffix(model.Url.ValueString(), "/$ref") {
+		state.Output = types.DynamicNull()
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+		return
+	}
+
+	options := clients.NewRequestOptions(nil, AsMapOfLists(model.ReadQueryParameters))
+	responseBody, err := r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
+	if err != nil {
+		if utils.ResponseErrorWasNotFound(err) {
+			tflog.Info(ctx, fmt.Sprintf("Error reading %q - removing from state", model.Id.ValueString()))
+			resp.State.RemoveResource(ctx)
 			return
 		}
-		model.Output = types.DynamicValue(buildOutputFromBody(responseBody, model.ResponseExportValues))
+		resp.Diagnostics.AddError("Failed to read data source", err.Error())
+		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	state.Output = types.DynamicValue(buildOutputFromBody(responseBody, model.ResponseExportValues))
+	if !model.Body.IsNull() {
+		requestBody := make(map[string]interface{})
+		if err := unmarshalBody(model.Body, &requestBody); err != nil {
+			resp.Diagnostics.AddError("Invalid body", fmt.Sprintf(`The argument "body" is invalid: %s`, err.Error()))
+			return
+		}
+
+		option := utils.UpdateJsonOption{
+			IgnoreCasing:          false,
+			IgnoreMissingProperty: false,
+			IgnoreNullProperty:    false,
+		}
+		body := utils.UpdateObject(requestBody, responseBody, option)
+
+		data, err := json.Marshal(body)
+		if err != nil {
+			resp.Diagnostics.AddError("Invalid body", err.Error())
+			return
+		}
+		payload, err := dynamic.FromJSON(data, model.Body.UnderlyingValue().Type(ctx))
+		if err != nil {
+			tflog.Warn(ctx, fmt.Sprintf("Failed to parse payload: %s", err.Error()))
+			payload, err = dynamic.FromJSONImplied(data)
+			if err != nil {
+				resp.Diagnostics.AddError("Invalid payload", err.Error())
+				return
+			}
+		}
+		state.Body = payload
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *MSGraphResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
