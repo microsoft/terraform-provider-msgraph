@@ -127,6 +127,7 @@ func (r *MSGraphDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	options := clients.RequestOptions{
+		Headers:         AsMapOfString(model.Headers),
 		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.QueryParameters)),
 		RetryOptions:    clients.NewRetryOptions(model.Retry),
 	}
