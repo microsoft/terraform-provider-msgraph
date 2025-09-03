@@ -1,11 +1,11 @@
 ## 0.2.0 (Unreleased)
 
+FEATURES:
+- **New Resource**: msgraph_update_resource
+
 ENHANCEMENTS:
 - `msgraph` resources and data sources now support `retry` configuration to handle transient failures.
 - `msgraph` resource and data source: support for `timeouts` configuration block
-
-FEATURES:
-- **New Resource**: msgraph_update_resource
 
 BUG FIXES:
 - Fixed an issue where `msgraph_resource` resource did not wait for the resource to be fully provisioned before completing.
