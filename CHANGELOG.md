@@ -10,6 +10,7 @@ ENHANCEMENTS:
 BUG FIXES:
 - Fixed an issue where `msgraph_resource` resource did not wait for the resource to be fully provisioned before completing.
 - Fixed an issue with the `msgraph_resource` resource could not detect resource drift.
+- Fixed an issue that 200 OK responses were not being handled correctly when deleting resources.
 
 ## 0.1.0
 

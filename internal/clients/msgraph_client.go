@@ -272,7 +272,7 @@ func (client *MSGraphClient) Delete(ctx context.Context, url string, apiVersion 
 
 	// TODO: Handle long-running operations if needed
 
-	if !runtime.HasStatusCode(resp, http.StatusNoContent) {
+	if !runtime.HasStatusCode(resp, http.StatusOK, http.StatusAccepted, http.StatusNoContent) {
 		return runtime.NewResponseError(resp)
 	}
 	return nil
