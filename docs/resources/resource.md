@@ -68,6 +68,7 @@ This resource can manage any Microsoft Graph API resource.
 - `body` (Dynamic) A dynamic attribute that contains the request body.
 - `create_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the create request.
 - `delete_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the delete request.
+- `ignore_missing_property` (Boolean) Whether ignore not returned properties like credentials in `body` to suppress plan-diff. Defaults to `true`. It's recommend to enable this option when some sensitive properties are not returned in response body, instead of setting them in `lifecycle.ignore_changes` because it will make the sensitive fields unable to update.
 - `read_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the read request.
 - `response_export_values` (Map of String) A map where the key is the name for the result and the value is a JMESPath query string to filter the response. Here's an example. If it sets to `{"all" = "@", "app_id" = "appId"}`, it will set the following HCL object to the computed property output.
 

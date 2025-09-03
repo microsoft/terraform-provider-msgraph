@@ -81,3 +81,7 @@ To learn more about JMESPath, visit [JMESPath](https://jmespath.org/).
 func ResourceID() string {
 	return "The ID of the resource. Normally, it is in the format of UUID."
 }
+
+func IgnoreMissingProperty() string {
+	return "Whether ignore not returned properties like credentials in `body` to suppress plan-diff. Defaults to `true`. It's recommend to enable this option when some sensitive properties are not returned in response body, instead of setting them in `lifecycle.ignore_changes` because it will make the sensitive fields unable to update."
+}

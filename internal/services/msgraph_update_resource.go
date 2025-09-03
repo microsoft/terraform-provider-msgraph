@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -51,6 +52,7 @@ type MSGraphUpdateResourceModel struct {
 	ApiVersion            types.String      `tfsdk:"api_version"`
 	Url                   types.String      `tfsdk:"url"`
 	Body                  types.Dynamic     `tfsdk:"body"`
+	IgnoreMissingProperty types.Bool        `tfsdk:"ignore_missing_property"`
 	UpdateQueryParameters types.Map         `tfsdk:"update_query_parameters"`
 	ReadQueryParameters   types.Map         `tfsdk:"read_query_parameters"`
 	ResponseExportValues  map[string]string `tfsdk:"response_export_values"`
@@ -96,6 +98,13 @@ func (r *MSGraphUpdateResource) Schema(ctx context.Context, req resource.SchemaR
 			"body": schema.DynamicAttribute{
 				MarkdownDescription: docstrings.Body(),
 				Optional:            true,
+			},
+
+			"ignore_missing_property": schema.BoolAttribute{
+				MarkdownDescription: docstrings.IgnoreMissingProperty(),
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(true),
 			},
 
 			"update_query_parameters": schema.MapAttribute{
@@ -263,7 +272,7 @@ func (r *MSGraphUpdateResource) Read(ctx context.Context, req resource.ReadReque
 
 		option := utils.UpdateJsonOption{
 			IgnoreCasing:          false,
-			IgnoreMissingProperty: false,
+			IgnoreMissingProperty: model.IgnoreMissingProperty.ValueBool(),
 			IgnoreNullProperty:    false,
 		}
 		body := utils.UpdateObject(requestBody, responseBody, option)

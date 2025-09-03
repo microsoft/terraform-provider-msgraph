@@ -5,7 +5,8 @@ FEATURES:
 
 ENHANCEMENTS:
 - `msgraph` resources and data sources now support `retry` configuration to handle transient failures.
-- `msgraph` resource and data source: support for `timeouts` configuration block
+- `msgraph` resource and data source: support for `timeouts` configuration block.
+- `msgraph_resource` and `msgraph_update_resource` resources: support for `ignore_missing_property` field.
 
 BUG FIXES:
 - Fixed an issue where `msgraph_resource` resource did not wait for the resource to be fully provisioned before completing.

@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -55,6 +56,7 @@ type MSGraphResourceModel struct {
 	ApiVersion            types.String      `tfsdk:"api_version"`
 	Url                   types.String      `tfsdk:"url"`
 	Body                  types.Dynamic     `tfsdk:"body"`
+	IgnoreMissingProperty types.Bool        `tfsdk:"ignore_missing_property"`
 	CreateQueryParameters types.Map         `tfsdk:"create_query_parameters"`
 	UpdateQueryParameters types.Map         `tfsdk:"update_query_parameters"`
 	ReadQueryParameters   types.Map         `tfsdk:"read_query_parameters"`
@@ -101,6 +103,13 @@ func (r *MSGraphResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"body": schema.DynamicAttribute{
 				MarkdownDescription: docstrings.Body(),
 				Optional:            true,
+			},
+
+			"ignore_missing_property": schema.BoolAttribute{
+				MarkdownDescription: docstrings.IgnoreMissingProperty(),
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(true),
 			},
 
 			"create_query_parameters": schema.MapAttribute{
@@ -351,7 +360,7 @@ func (r *MSGraphResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 		option := utils.UpdateJsonOption{
 			IgnoreCasing:          false,
-			IgnoreMissingProperty: false,
+			IgnoreMissingProperty: model.IgnoreMissingProperty.ValueBool(),
 			IgnoreNullProperty:    false,
 		}
 		body := utils.UpdateObject(requestBody, responseBody, option)
@@ -434,6 +443,7 @@ func (r *MSGraphResource) ImportState(ctx context.Context, req resource.ImportSt
 		Id:                    types.StringValue(id),
 		Url:                   types.StringValue(urlValue),
 		ApiVersion:            types.StringValue(apiVersion),
+		IgnoreMissingProperty: types.BoolValue(true),
 		CreateQueryParameters: types.MapNull(types.ListType{ElemType: types.StringType}),
 		UpdateQueryParameters: types.MapNull(types.ListType{ElemType: types.StringType}),
 		ReadQueryParameters:   types.MapNull(types.ListType{ElemType: types.StringType}),

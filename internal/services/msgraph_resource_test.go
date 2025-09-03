@@ -81,6 +81,23 @@ func TestAcc_ResourceGroupMember(t *testing.T) {
 	})
 }
 
+func TestAcc_ResourceIgnoreMissingProperty(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.groupOwnerBind(data),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+		},
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
+	})
+}
+
 func TestAcc_ResourceRetry(t *testing.T) {
 	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
 
@@ -187,6 +204,23 @@ resource "msgraph_resource" "test" {
 
 func (r MSGraphTestResource) groupMember(data acceptance.TestData) string {
 	return `
+resource "msgraph_resource" "application" {
+  url = "applications"
+  body = {
+    displayName = "My Application"
+  }
+  response_export_values = {
+    appId = "appId"
+  }
+}
+
+resource "msgraph_resource" "servicePrincipal_application" {
+  url = "servicePrincipals"
+  body = {
+    appId = msgraph_resource.application.output.appId
+  }
+}
+
 resource "msgraph_resource" "group" {
   url = "groups"
   body = {
@@ -197,6 +231,17 @@ resource "msgraph_resource" "group" {
   }
 }
 
+resource "msgraph_resource" "test" {
+  url = "groups/${msgraph_resource.group.id}/members/$ref"
+  body = {
+    "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/${msgraph_resource.servicePrincipal_application.id}"
+  }
+}
+`
+}
+
+func (r MSGraphTestResource) groupOwnerBind(data acceptance.TestData) string {
+	return `
 resource "msgraph_resource" "application" {
   url = "applications"
   body = {
@@ -215,10 +260,15 @@ resource "msgraph_resource" "servicePrincipal_application" {
 }
 
 resource "msgraph_resource" "test" {
-  # url = "groups/{group-id}/members/$ref"
-  url = "groups/${msgraph_resource.group.id}/members/$ref"
+  url = "groups"
   body = {
-    "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/${msgraph_resource.servicePrincipal_application.id}"
+    displayName     = "My Group Owners Bind"
+    mailEnabled     = false
+    mailNickname    = "mygroup-owners-bind"
+    securityEnabled = true
+    "owners@odata.bind" = [
+      "https://graph.microsoft.com/v1.0/directoryObjects/${msgraph_resource.servicePrincipal_application.id}"
+    ]
   }
 }
 `

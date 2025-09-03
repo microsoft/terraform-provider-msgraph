@@ -69,6 +69,7 @@ This resource can manage a subset of any existing Microsoft Graph resource's pro
 
 - `api_version` (String) The API version of the data source. The allowed values are `v1.0` and `beta`. Defaults to `v1.0`.
 - `body` (Dynamic) A dynamic attribute that contains the request body.
+- `ignore_missing_property` (Boolean) Whether ignore not returned properties like credentials in `body` to suppress plan-diff. Defaults to `true`. It's recommend to enable this option when some sensitive properties are not returned in response body, instead of setting them in `lifecycle.ignore_changes` because it will make the sensitive fields unable to update.
 - `read_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the read request.
 - `response_export_values` (Map of String) A map where the key is the name for the result and the value is a JMESPath query string to filter the response. Here's an example. If it sets to `{"all" = "@", "app_id" = "appId"}`, it will set the following HCL object to the computed property output.
 
