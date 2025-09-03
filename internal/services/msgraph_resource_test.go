@@ -3,6 +3,7 @@ package services_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -94,6 +95,39 @@ func TestAcc_ResourceRetry(t *testing.T) {
 			),
 		},
 		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
+	})
+}
+
+func TestAcc_ResourceTimeouts_Create(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.withCreateTimeout(),
+			// Creating with 1ns should fail quickly with a deadline exceeded error
+			ExpectError: regexp.MustCompile(`context deadline exceeded`),
+		},
+	})
+}
+
+func TestAcc_ResourceTimeouts_Update(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.basic(data),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+			),
+		},
+		{
+			Config:      r.withUpdateTimeout(),
+			ExpectError: regexp.MustCompile(`context deadline exceeded`),
+		},
 	})
 }
 
@@ -202,6 +236,33 @@ resource "msgraph_resource" "test" {
       "temporary error",
       ".*throttl.*",
     ]
+  }
+}`
+}
+
+func (r MSGraphTestResource) withCreateTimeout() string {
+	return `
+resource "msgraph_resource" "test" {
+  url = "applications"
+  timeouts {
+    create = "1ns"
+  }
+  body = {
+    displayName = "Demo App Timeout Create"
+  }
+}
+`
+}
+
+func (r MSGraphTestResource) withUpdateTimeout() string {
+	return `
+resource "msgraph_resource" "test" {
+  url = "applications"
+  timeouts {
+    update = "1ns"
+  }
+  body = {
+    displayName = "Demo App Updated Timeout Update"
   }
 }
 `

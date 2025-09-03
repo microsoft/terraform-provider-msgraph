@@ -85,7 +85,6 @@ This resource can manage a subset of any existing Microsoft Graph resource's pro
 	```
 
 To learn more about JMESPath, visit [JMESPath](https://jmespath.org/).
-- `retry` (Attributes) The retry object supports the following attributes: (see [below for nested schema](#nestedatt--retry))
 - `update_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the update request.
 
 ### Read-Only
@@ -104,12 +103,5 @@ To learn more about JMESPath, visit [JMESPath](https://jmespath.org/).
 	   value = msgraph_resource.application.output.all
 	 }
 	```
-
-<a id="nestedatt--retry"></a>
-### Nested Schema for `retry`
-
-Required:
-
-- `error_message_regex` (List of String) A list of regular expressions to match against error messages. If any of the regular expressions match, the request will be retried.
 
 

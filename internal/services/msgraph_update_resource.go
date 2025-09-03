@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -54,6 +56,7 @@ type MSGraphUpdateResourceModel struct {
 	ResponseExportValues  map[string]string `tfsdk:"response_export_values"`
 	Retry                 retry.Value       `tfsdk:"retry"`
 	Output                types.Dynamic     `tfsdk:"output"`
+	Timeouts              timeouts.Value    `tfsdk:"timeouts"`
 }
 
 func (r *MSGraphUpdateResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -124,6 +127,15 @@ func (r *MSGraphUpdateResource) Schema(ctx context.Context, req resource.SchemaR
 				Computed:            true,
 			},
 		},
+
+		Blocks: map[string]schema.Block{
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+				Delete: true,
+			}),
+		},
 	}
 }
 
@@ -145,7 +157,7 @@ func (r *MSGraphUpdateResource) ModifyPlan(ctx context.Context, request resource
 	}
 }
 
-func (r *MSGraphUpdateResource) CreateUpdate(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, diagnostics *diag.Diagnostics) {
+func (r *MSGraphUpdateResource) CreateUpdate(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, diagnostics *diag.Diagnostics, isCreate bool) {
 	var model MSGraphUpdateResourceModel
 	var stateModel *MSGraphUpdateResourceModel
 	diagnostics.Append(plan.Get(ctx, &model)...)
@@ -153,6 +165,17 @@ func (r *MSGraphUpdateResource) CreateUpdate(ctx context.Context, plan tfsdk.Pla
 	if diagnostics.HasError() {
 		return
 	}
+
+	var writeTimeout time.Duration
+	var diags diag.Diagnostics
+	if isCreate {
+		writeTimeout, diags = model.Timeouts.Create(ctx, 30*time.Minute)
+	} else {
+		writeTimeout, diags = model.Timeouts.Update(ctx, 30*time.Minute)
+	}
+	diagnostics.Append(diags...)
+	ctx, cancel := context.WithTimeout(ctx, writeTimeout)
+	defer cancel()
 
 	data, err := dynamic.ToJSON(model.Body)
 	if err != nil {
@@ -190,11 +213,11 @@ func (r *MSGraphUpdateResource) CreateUpdate(ctx context.Context, plan tfsdk.Pla
 }
 
 func (r *MSGraphUpdateResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-	r.CreateUpdate(ctx, request.Plan, &response.State, &response.Diagnostics)
+	r.CreateUpdate(ctx, request.Plan, &response.State, &response.Diagnostics, true)
 }
 
 func (r *MSGraphUpdateResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	r.CreateUpdate(ctx, req.Plan, &resp.State, &resp.Diagnostics)
+	r.CreateUpdate(ctx, req.Plan, &resp.State, &resp.Diagnostics, false)
 }
 
 func (r *MSGraphUpdateResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -202,6 +225,12 @@ func (r *MSGraphUpdateResource) Read(ctx context.Context, req resource.ReadReque
 	if resp.Diagnostics.Append(req.State.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Apply read timeout (default 5m)
+	readTimeout, diags := model.Timeouts.Read(ctx, 5*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	if model.ApiVersion.ValueString() == "" {
 		model.ApiVersion = types.StringValue("v1.0")

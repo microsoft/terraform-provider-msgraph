@@ -7,9 +7,12 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -60,6 +63,7 @@ type MSGraphResourceModel struct {
 	ResponseExportValues  map[string]string `tfsdk:"response_export_values"`
 	Retry                 retry.Value       `tfsdk:"retry"`
 	Output                types.Dynamic     `tfsdk:"output"`
+	Timeouts              timeouts.Value    `tfsdk:"timeouts"`
 }
 
 func (r *MSGraphResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -145,6 +149,10 @@ func (r *MSGraphResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Computed:            true,
 			},
 		},
+
+		Blocks: map[string]schema.Block{
+			"timeouts": timeouts.BlockAll(ctx),
+		},
 	}
 }
 
@@ -187,6 +195,11 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 	if resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
+
+	createTimeout, diags := model.Timeouts.Create(ctx, 30*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	data, err := dynamic.ToJSON(model.Body)
 	if err != nil {
@@ -256,6 +269,11 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	updateTimeout, diags := model.Timeouts.Update(ctx, 30*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
 	data, err := dynamic.ToJSON(model.Body)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to marshal body", err.Error())
@@ -296,28 +314,66 @@ func (r *MSGraphResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	// Apply read timeout (default 5m if not configured)
+	readTimeout, diags := model.Timeouts.Read(ctx, 5*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
 	if model.ApiVersion.ValueString() == "" {
 		model.ApiVersion = types.StringValue("v1.0")
 	}
 
-	if !strings.HasSuffix(model.Url.ValueString(), "/$ref") {
-		options := clients.RequestOptions{
-			QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
-			RetryOptions:    clients.NewRetryOptions(model.Retry),
-		}
-		responseBody, err := r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
-		if err != nil {
-			if utils.ResponseErrorWasNotFound(err) {
-				tflog.Info(ctx, fmt.Sprintf("Error reading %q - removing from state", model.Id.ValueString()))
-				resp.State.RemoveResource(ctx)
-				return
-			}
-			resp.Diagnostics.AddError("Failed to read data source", err.Error())
+	state := model
+	if strings.HasSuffix(model.Url.ValueString(), "/$ref") {
+		state.Output = types.DynamicNull()
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+		return
+	}
+
+	options := clients.NewRequestOptions(nil, AsMapOfLists(model.ReadQueryParameters))
+	responseBody, err := r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
+	if err != nil {
+		if utils.ResponseErrorWasNotFound(err) {
+			tflog.Info(ctx, fmt.Sprintf("Error reading %q - removing from state", model.Id.ValueString()))
+			resp.State.RemoveResource(ctx)
 			return
 		}
-		model.Output = types.DynamicValue(buildOutputFromBody(responseBody, model.ResponseExportValues))
+		resp.Diagnostics.AddError("Failed to read data source", err.Error())
+		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	state.Output = types.DynamicValue(buildOutputFromBody(responseBody, model.ResponseExportValues))
+	if !model.Body.IsNull() {
+		requestBody := make(map[string]interface{})
+		if err := unmarshalBody(model.Body, &requestBody); err != nil {
+			resp.Diagnostics.AddError("Invalid body", fmt.Sprintf(`The argument "body" is invalid: %s`, err.Error()))
+			return
+		}
+
+		option := utils.UpdateJsonOption{
+			IgnoreCasing:          false,
+			IgnoreMissingProperty: false,
+			IgnoreNullProperty:    false,
+		}
+		body := utils.UpdateObject(requestBody, responseBody, option)
+
+		data, err := json.Marshal(body)
+		if err != nil {
+			resp.Diagnostics.AddError("Invalid body", err.Error())
+			return
+		}
+		payload, err := dynamic.FromJSON(data, model.Body.UnderlyingValue().Type(ctx))
+		if err != nil {
+			tflog.Warn(ctx, fmt.Sprintf("Failed to parse payload: %s", err.Error()))
+			payload, err = dynamic.FromJSONImplied(data)
+			if err != nil {
+				resp.Diagnostics.AddError("Invalid payload", err.Error())
+				return
+			}
+		}
+		state.Body = payload
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *MSGraphResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -325,6 +381,11 @@ func (r *MSGraphResource) Delete(ctx context.Context, req resource.DeleteRequest
 	if resp.Diagnostics.Append(req.State.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
+
+	deleteTimeout, diags := model.Timeouts.Delete(ctx, 30*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	var itemUrl string
 	if strings.HasSuffix(model.Url.ValueString(), "/$ref") {
@@ -379,6 +440,14 @@ func (r *MSGraphResource) ImportState(ctx context.Context, req resource.ImportSt
 		ReadQueryParameters:   types.MapNull(types.ListType{ElemType: types.StringType}),
 		DeleteQueryParameters: types.MapNull(types.ListType{ElemType: types.StringType}),
 		Retry:                 retry.NewValueNull(),
+		Timeouts: timeouts.Value{
+			Object: types.ObjectNull(map[string]attr.Type{
+				"create": types.StringType,
+				"update": types.StringType,
+				"read":   types.StringType,
+				"delete": types.StringType,
+			}),
+		},
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }

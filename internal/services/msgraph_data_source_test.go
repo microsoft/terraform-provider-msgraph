@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -68,6 +69,18 @@ func TestAcc_DataSourceRetry(t *testing.T) {
 	})
 }
 
+func TestAcc_DataSourceTimeouts_Read(t *testing.T) {
+	data := acceptance.BuildTestData(t, "data.msgraph_resource", "test")
+	r := MSGraphTestDataSource{}
+
+	data.DataSourceTest(t, []resource.TestStep{
+		{
+			Config:      r.withReadTimeout(data),
+			ExpectError: regexp.MustCompile(`context deadline exceeded`),
+		},
+	})
+}
+
 func (r MSGraphTestDataSource) basic(data acceptance.TestData) string {
 	return fmt.Sprintf(`
 %s
@@ -120,4 +133,18 @@ data "msgraph_resource" "test" {
   }
 }
 `
+}
+
+func (r MSGraphTestDataSource) withReadTimeout(data acceptance.TestData) string {
+	return MSGraphTestResource{}.basic(data) + "\n" + r.dataSourceWithReadTimeout()
+}
+
+func (r MSGraphTestDataSource) dataSourceWithReadTimeout() string {
+	return `
+data "msgraph_resource" "test" {
+  url = "applications/${msgraph_resource.test.id}"
+  timeouts {
+    read = "1ns"
+  }
+}`
 }
