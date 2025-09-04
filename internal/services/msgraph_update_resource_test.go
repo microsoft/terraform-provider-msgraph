@@ -107,6 +107,26 @@ func TestAcc_UpdateResourceRetry(t *testing.T) {
 	})
 }
 
+func TestAcc_UpdateResource_GroupOwnerBind_UpdateDisplayName(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_update_resource", "test")
+	r := MSGraphTestUpdateResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.groupWithOwnerUpdate("My Group Owners Bind 2"),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+			),
+		},
+		{
+			Config: r.groupWithOwnerUpdate("My Group Owners Bind 3"),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+			),
+		},
+	})
+}
+
 func (r MSGraphTestUpdateResource) Exists(ctx context.Context, client *clients.Client, state *terraform.InstanceState) (*bool, error) {
 	apiVersion := state.Attributes["api_version"]
 	url := state.Attributes["url"]
@@ -236,4 +256,54 @@ resource "msgraph_update_resource" "test" {
   }
 }
 `
+}
+
+func (r MSGraphTestUpdateResource) groupWithOwnerBase() string {
+	return `
+resource "msgraph_resource" "application" {
+  url = "applications"
+  body = {
+    displayName = "My Application"
+  }
+  response_export_values = {
+    appId = "appId"
+  }
+}
+
+resource "msgraph_resource" "servicePrincipal_application" {
+  url = "servicePrincipals"
+  body = {
+    appId = msgraph_resource.application.output.appId
+  }
+}
+
+resource "msgraph_resource" "group" {
+  url = "groups"
+  body = {
+    displayName     = "My Group Owners Bind"
+    mailEnabled     = false
+    mailNickname    = "mygroup-owners-bind"
+    securityEnabled = true
+    "owners@odata.bind" = [
+      "https://graph.microsoft.com/v1.0/directoryObjects/${msgraph_resource.servicePrincipal_application.id}"
+    ]
+  }
+  lifecycle {
+    ignore_changes = [body.displayName]
+  }
+}
+`
+}
+
+func (r MSGraphTestUpdateResource) groupWithOwnerUpdate(displayName string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "msgraph_update_resource" "test" {
+  url = "groups/${msgraph_resource.group.id}"
+  body = {
+    displayName = "%s"
+  }
+}
+`, r.groupWithOwnerBase(), displayName)
 }

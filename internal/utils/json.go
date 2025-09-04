@@ -198,3 +198,69 @@ func isZeroValue(value interface{}) bool {
 	}
 	return false
 }
+
+// DiffObject computes a minimal patch that transforms old -> new.
+// It returns:
+// - nil if there are no changes
+// - a map[string]interface{} with only changed fields for objects
+// - a full new array for arrays when they differ
+// - the new primitive value for scalars when they differ
+func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) interface{} {
+	if reflect.DeepEqual(old, new) {
+		return nil
+	}
+	switch oldValue := old.(type) {
+	case map[string]interface{}:
+		if newMap, ok := new.(map[string]interface{}); ok {
+			res := make(map[string]interface{})
+			// include keys present in new
+			for key, newVal := range newMap {
+				if oldVal, ok := oldValue[key]; ok {
+					if d := DiffObject(oldVal, newVal, option); !IsEmptyObject(d) {
+						res[key] = d
+					}
+				} else {
+					// key doesn't exist in old -> create
+					res[key] = newVal
+				}
+			}
+			if len(res) == 0 {
+				return nil
+			}
+			return res
+		}
+	case []interface{}:
+		if newArr, ok := new.([]interface{}); ok {
+			if reflect.DeepEqual(oldValue, newArr) {
+				return nil
+			}
+			// For arrays, send the full new array when changed
+			return newArr
+		}
+	case string:
+		if newStr, ok := new.(string); ok {
+			if option.IgnoreCasing && strings.EqualFold(oldValue, newStr) {
+				return nil
+			}
+			if option.IgnoreMissingProperty && (regexp.MustCompile(`^\*+$`).MatchString(newStr) || "<redacted>" == newStr || "" == newStr) {
+				return nil
+			}
+		}
+	}
+	// primitives or differing types -> return new
+	return new
+}
+
+// IsEmptyObject returns true if the input should be considered an empty patch
+func IsEmptyObject(v interface{}) bool {
+	if v == nil {
+		return true
+	}
+	switch t := v.(type) {
+	case map[string]interface{}:
+		return len(t) == 0
+	case []interface{}:
+		return len(t) == 0
+	}
+	return false
+}

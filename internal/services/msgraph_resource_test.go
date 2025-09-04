@@ -88,7 +88,35 @@ func TestAcc_ResourceIgnoreMissingProperty(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.groupOwnerBind(data),
+			Config: r.groupOwnerBind(data, "My Group Owners Bind"),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+		},
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
+	})
+}
+
+func TestAcc_ResourceGroupOwnerBind_UpdateDisplayName(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	importStep := data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...)
+	importStep.ImportStateVerify = false
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.groupOwnerBind(data, "My Group Owners Bind"),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+		},
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
+		{
+			Config: r.groupOwnerBind(data, "My Group Owners Bind Updated"),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
@@ -240,8 +268,8 @@ resource "msgraph_resource" "test" {
 `
 }
 
-func (r MSGraphTestResource) groupOwnerBind(data acceptance.TestData) string {
-	return `
+func (r MSGraphTestResource) groupOwnerBind(data acceptance.TestData, displayName string) string {
+	return fmt.Sprintf(`
 resource "msgraph_resource" "application" {
   url = "applications"
   body = {
@@ -262,7 +290,7 @@ resource "msgraph_resource" "servicePrincipal_application" {
 resource "msgraph_resource" "test" {
   url = "groups"
   body = {
-    displayName     = "My Group Owners Bind"
+    displayName     = "%s"
     mailEnabled     = false
     mailNickname    = "mygroup-owners-bind"
     securityEnabled = true
@@ -271,7 +299,7 @@ resource "msgraph_resource" "test" {
     ]
   }
 }
-`
+`, displayName)
 }
 
 func (r MSGraphTestResource) withRetry(data acceptance.TestData) string {

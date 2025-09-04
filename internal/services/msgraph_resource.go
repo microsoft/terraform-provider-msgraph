@@ -209,13 +209,8 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
-	data, err := dynamic.ToJSON(model.Body)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal body", err.Error())
-		return
-	}
 	var requestBody interface{}
-	if err = json.Unmarshal(data, &requestBody); err != nil {
+	if err := unmarshalBody(model.Body, &requestBody); err != nil {
 		resp.Diagnostics.AddError("Failed to unmarshal body", err.Error())
 		return
 	}
@@ -272,8 +267,11 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 }
 
 func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model *MSGraphResourceModel
+	var model, state *MSGraphResourceModel
 	if resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...); resp.Diagnostics.HasError() {
+		return
+	}
+	if resp.Diagnostics.Append(req.State.Get(ctx, &state)...); resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -282,28 +280,40 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
-	data, err := dynamic.ToJSON(model.Body)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal body", err.Error())
-		return
-	}
 	var requestBody interface{}
-	if err = json.Unmarshal(data, &requestBody); err != nil {
+	if err := unmarshalBody(model.Body, &requestBody); err != nil {
 		resp.Diagnostics.AddError("Failed to unmarshal body", err.Error())
 		return
 	}
-
-	options := clients.RequestOptions{
-		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.UpdateQueryParameters)),
-		RetryOptions:    clients.NewRetryOptions(model.Retry),
-	}
-	_, err = r.client.Update(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), requestBody, options)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to create resource", err.Error())
+	var previousBody interface{}
+	if err := unmarshalBody(state.Body, &previousBody); err != nil {
+		resp.Diagnostics.AddError("Invalid body in prior state", fmt.Sprintf(`The state "body" is invalid: %s`, err.Error()))
 		return
 	}
 
-	options = clients.RequestOptions{
+	diffOption := utils.UpdateJsonOption{
+		IgnoreCasing:          false,
+		IgnoreMissingProperty: false,
+		IgnoreNullProperty:    false,
+	}
+	patchBody := utils.DiffObject(previousBody, requestBody, diffOption)
+
+	// If there's something to update, send PATCH
+	if !utils.IsEmptyObject(patchBody) {
+		options := clients.RequestOptions{
+			QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.UpdateQueryParameters)),
+			RetryOptions:    clients.NewRetryOptions(model.Retry),
+		}
+		_, err := r.client.Update(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), patchBody, options)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to create resource", err.Error())
+			return
+		}
+	} else {
+		tflog.Info(ctx, "No changes detected in body, skipping update")
+	}
+
+	options := clients.RequestOptions{
 		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
 		RetryOptions:    clients.NewRetryOptions(model.Retry),
 	}
