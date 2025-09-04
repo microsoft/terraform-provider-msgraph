@@ -70,7 +70,7 @@ func TestAcc_ResourceGroupMember(t *testing.T) {
 	importStep.ImportStateVerify = false
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.groupMember(data),
+			Config: r.groupMember(),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
@@ -88,7 +88,7 @@ func TestAcc_ResourceIgnoreMissingProperty(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.groupOwnerBind(data, "My Group Owners Bind"),
+			Config: r.groupOwnerBind("My Group Owners Bind"),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
@@ -108,7 +108,7 @@ func TestAcc_ResourceGroupOwnerBind_UpdateDisplayName(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.groupOwnerBind(data, "My Group Owners Bind"),
+			Config: r.groupOwnerBind("My Group Owners Bind"),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
@@ -116,7 +116,7 @@ func TestAcc_ResourceGroupOwnerBind_UpdateDisplayName(t *testing.T) {
 		},
 		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
 		{
-			Config: r.groupOwnerBind(data, "My Group Owners Bind Updated"),
+			Config: r.groupOwnerBind("My Group Owners Bind Updated"),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
@@ -133,7 +133,7 @@ func TestAcc_ResourceRetry(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.withRetry(data),
+			Config: r.withRetry(),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
@@ -230,7 +230,7 @@ resource "msgraph_resource" "test" {
 `
 }
 
-func (r MSGraphTestResource) groupMember(data acceptance.TestData) string {
+func (r MSGraphTestResource) groupMember() string {
 	return `
 resource "msgraph_resource" "application" {
   url = "applications"
@@ -268,7 +268,7 @@ resource "msgraph_resource" "test" {
 `
 }
 
-func (r MSGraphTestResource) groupOwnerBind(data acceptance.TestData, displayName string) string {
+func (r MSGraphTestResource) groupOwnerBind(displayName string) string {
 	return fmt.Sprintf(`
 resource "msgraph_resource" "application" {
   url = "applications"
@@ -302,7 +302,7 @@ resource "msgraph_resource" "test" {
 `, displayName)
 }
 
-func (r MSGraphTestResource) withRetry(data acceptance.TestData) string {
+func (r MSGraphTestResource) withRetry() string {
 	return `
 resource "msgraph_resource" "test" {
   url = "applications"
