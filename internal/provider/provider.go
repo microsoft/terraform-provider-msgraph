@@ -435,6 +435,7 @@ func (p *MSGraphProvider) Resources(ctx context.Context) []func() resource.Resou
 	return []func() resource.Resource{
 		services.NewMSGraphResource,
 		services.NewMSGraphUpdateResource,
+		services.NewMSGraphResourceCollection,
 	}
 }
 

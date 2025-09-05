@@ -277,3 +277,7 @@ func (client *MSGraphClient) Delete(ctx context.Context, url string, apiVersion 
 	}
 	return nil
 }
+
+func (client *MSGraphClient) GraphBaseUrl() string {
+	return client.host
+}

@@ -2,6 +2,7 @@
 
 FEATURES:
 - **New Resource**: msgraph_update_resource
+- **New Resource**: msgraph_resource_collection
 
 ENHANCEMENTS:
 - `msgraph` resources and data sources now support `retry` configuration to handle transient failures.

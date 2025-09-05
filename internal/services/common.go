@@ -19,6 +19,15 @@ func AsMapOfString(input types.Map) map[string]string {
 	return result
 }
 
+func AsListOfString(input types.List) []string {
+	result := make([]string, 0)
+	diags := input.ElementsAs(context.Background(), &result, false)
+	if diags.HasError() {
+		tflog.Warn(context.Background(), fmt.Sprintf("failed to convert input to list of strings: %s", diags))
+	}
+	return result
+}
+
 func AsMapOfLists(input types.Map) map[string][]string {
 	result := make(map[string][]string)
 	diags := input.ElementsAs(context.Background(), &result, false)
