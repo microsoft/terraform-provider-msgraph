@@ -2,12 +2,12 @@
 page_title: "msgraph_resource_collection Resource - terraform-provider-msgraph"
 subcategory: ""
 description: |-
-  Manage the full contents of a child collection (members, owners, appRoleAssignments, etc.) for an existing Microsoft Graph resource. Missing items are added; extra remote items are removed.
+  Manage the full contents of a child reference collection (such as group members or owners) for an existing Microsoft Graph resource. Missing items are added; extra remote items are removed.
 ---
 
 # msgraph_resource_collection (Resource)
 
-Manage the full contents of a child collection (members, owners, appRoleAssignments, etc.) for an existing Microsoft Graph resource. Missing items are added; extra remote items are removed.
+Manage the full contents of a child reference collection (such as group members or owners) for an existing Microsoft Graph resource. Missing items are added; extra remote items are removed.
 
 ## Example Usage
 

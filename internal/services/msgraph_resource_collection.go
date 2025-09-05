@@ -57,7 +57,7 @@ func (r *MSGraphResourceCollection) Metadata(ctx context.Context, req resource.M
 
 func (r *MSGraphResourceCollection) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manage the full contents of a child collection (members, owners, appRoleAssignments, etc.) for an existing Microsoft Graph resource. Missing items are added; extra remote items are removed.",
+		MarkdownDescription: "Manage the full contents of a child reference collection (such as group members or owners) for an existing Microsoft Graph resource. Missing items are added; extra remote items are removed.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of this managed collection. This is the normalized collection URL with the trailing '/$ref' removed (e.g. for 'groups/{group-id}/members/$ref' the id becomes 'groups/{group-id}/members').",
