@@ -23,6 +23,7 @@ import (
 	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
 	"github.com/microsoft/terraform-provider-msgraph/internal/docstrings"
 	"github.com/microsoft/terraform-provider-msgraph/internal/myplanmodifier"
+	"github.com/microsoft/terraform-provider-msgraph/internal/myvalidator"
 	"github.com/microsoft/terraform-provider-msgraph/internal/retry"
 	"github.com/microsoft/terraform-provider-msgraph/internal/utils"
 )
@@ -70,7 +71,9 @@ func (r *MSGraphResourceCollection) Schema(ctx context.Context, req resource.Sch
 			"url": schema.StringAttribute{
 				MarkdownDescription: "Full relative path of the target reference collection ending in '/$ref'. For example: `groups/{group-id}/members/$ref`. This must point to a $ref collection; changing this value forces a new resource.",
 				Required:            true,
-				Validators:          []validator.String{},
+				Validators: []validator.String{
+					myvalidator.ResourceCollectionURL(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
