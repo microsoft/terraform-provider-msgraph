@@ -77,8 +77,8 @@ provider "msgraph" {}
 resource "msgraph_resource" "group" {
   url = "groups"
   body = {
-    displayName = "Test Group"
-	mailEnabled = false
+    displayName     = "Test Group"
+    mailEnabled     = false
     mailNickname    = "mygroup"
     securityEnabled = true
   }
@@ -103,8 +103,8 @@ provider "msgraph" {}
 resource "msgraph_resource" "group" {
   url = "groups"
   body = {
-    displayName = "Test Group"
-	mailEnabled = false
+    displayName     = "Test Group"
+    mailEnabled     = false
     mailNickname    = "mygroup"
     securityEnabled = true
   }
@@ -118,7 +118,7 @@ data "msgraph_resource_action" "test" {
   resource_url = msgraph_resource.group.resource_url
   action       = "owners"
   method       = "GET"
-  
+
   query_parameters = {
     "$select" = ["id", "displayName"]
     "$top"    = ["5"]
@@ -134,8 +134,8 @@ provider "msgraph" {}
 resource "msgraph_resource" "group" {
   url = "groups"
   body = {
-    displayName = "Test Group"
-	mailEnabled = false
+    displayName     = "Test Group"
+    mailEnabled     = false
     mailNickname    = "mygroup"
     securityEnabled = true
   }
@@ -149,7 +149,7 @@ data "msgraph_resource_action" "test" {
   resource_url = msgraph_resource.group.resource_url
   action       = "owners"
   method       = "GET"
-  
+
   headers = {
     "X-Custom-Header" = "test-value"
   }
@@ -164,8 +164,8 @@ provider "msgraph" {}
 resource "msgraph_resource" "group" {
   url = "groups"
   body = {
-    displayName = "Test Group"
-	mailEnabled = false
+    displayName     = "Test Group"
+    mailEnabled     = false
     mailNickname    = "mygroup"
     securityEnabled = true
   }
@@ -179,11 +179,11 @@ data "msgraph_resource_action" "test" {
   resource_url = msgraph_resource.group.resource_url
   action       = "checkMemberObjects"
   method       = "POST"
-  
+
   body = {
     ids = ["00000000-0000-0000-0000-000000000000"]
   }
-  
+
   response_export_values = {
     result = "value"
   }

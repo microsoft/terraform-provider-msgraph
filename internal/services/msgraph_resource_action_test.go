@@ -80,8 +80,8 @@ provider "msgraph" {}
 resource "msgraph_resource" "group" {
   url = "groups"
   body = {
-    displayName = "Test Group"
-	mailEnabled = false
+    displayName     = "Test Group"
+    mailEnabled     = false
     mailNickname    = "mygroup"
     securityEnabled = true
   }
@@ -109,8 +109,8 @@ provider "msgraph" {}
 resource "msgraph_resource" "group" {
   url = "groups"
   body = {
-    displayName = "Test Group"
-	mailEnabled = false
+    displayName     = "Test Group"
+    mailEnabled     = false
     mailNickname    = "mygroup"
     securityEnabled = true
   }
@@ -142,8 +142,8 @@ provider "msgraph" {}
 resource "msgraph_resource" "group" {
   url = "groups"
   body = {
-    displayName = "Test Group"
-	mailEnabled = false
+    displayName     = "Test Group"
+    mailEnabled     = false
     mailNickname    = "mygroup"
     securityEnabled = true
   }
@@ -176,8 +176,8 @@ provider "msgraph" {}
 resource "msgraph_resource" "group" {
   url = "groups"
   body = {
-    displayName = "Test Group"
-	mailEnabled = false
+    displayName     = "Test Group"
+    mailEnabled     = false
     mailNickname    = "mygroup"
     securityEnabled = true
   }

@@ -185,7 +185,7 @@ func (r *MSGraphResourceAction) Create(ctx context.Context, req resource.CreateR
 	if !model.Action.IsNull() && model.Action.ValueString() != "" {
 		fullUrl = fmt.Sprintf("%s/%s", fullUrl, model.Action.ValueString())
 	}
-	
+
 	// Use the full URL as the ID for this action resource
 	model.Id = types.StringValue(fullUrl)
 

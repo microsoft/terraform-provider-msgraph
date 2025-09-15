@@ -71,9 +71,9 @@ data "msgraph_resource_action" "group_members" {
   }
 
   response_export_values = {
-    members     = "value"
-    member_ids  = "value[].id"
-    next_link   = "@odata.nextLink"
+    members    = "value"
+    member_ids = "value[].id"
+    next_link  = "@odata.nextLink"
   }
 }
 
@@ -89,7 +89,7 @@ data "msgraph_resource_action" "app_service_principal" {
 
   response_export_values = {
     service_principals = "value"
-    sp_id             = "value[0].id"
+    sp_id              = "value[0].id"
   }
 }
 
