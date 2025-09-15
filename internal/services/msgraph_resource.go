@@ -53,6 +53,7 @@ func (r *MSGraphResource) ConfigValidators(ctx context.Context) []resource.Confi
 // MSGraphResourceModel describes the resource data model.
 type MSGraphResourceModel struct {
 	Id                    types.String      `tfsdk:"id"`
+	ResourceUrl           types.String      `tfsdk:"resource_url"`
 	ApiVersion            types.String      `tfsdk:"api_version"`
 	Url                   types.String      `tfsdk:"url"`
 	Body                  types.Dynamic     `tfsdk:"body"`
@@ -156,6 +157,14 @@ func (r *MSGraphResource) Schema(ctx context.Context, req resource.SchemaRequest
 				MarkdownDescription: docstrings.Output(),
 				Computed:            true,
 			},
+
+			"resource_url": schema.StringAttribute{
+				MarkdownDescription: "The full URL path to this resource instance.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 		},
 
 		Blocks: map[string]schema.Block{
@@ -231,6 +240,9 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 				if idString, ok := idValue.(string); ok {
 					uuidValue := idString[strings.LastIndex(idString, "/")+1:]
 					model.Id = types.StringValue(uuidValue)
+					// For $ref URLs, resource_url should be the collection URL without $ref + the ID
+					baseUrl := strings.TrimSuffix(model.Url.ValueString(), "/$ref")
+					model.ResourceUrl = types.StringValue(fmt.Sprintf("%s/%s", baseUrl, uuidValue))
 				}
 			}
 		}
@@ -247,6 +259,7 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 
 		model.Id = types.StringValue(responseId)
+		model.ResourceUrl = types.StringValue(fmt.Sprintf("%s/%s", model.Url.ValueString(), responseId))
 		options = clients.RequestOptions{
 			QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
 			RetryOptions: clients.CombineRetryOptions(
@@ -449,8 +462,20 @@ func (r *MSGraphResource) ImportState(ctx context.Context, req resource.ImportSt
 		urlValue = strings.TrimPrefix(parsedUrl.Path[0:lastIndex], "/")
 	}
 
+	// Construct the resource_url based on the URL pattern
+	var resourceUrl string
+	if strings.HasSuffix(urlValue, "/$ref") {
+		// For $ref URLs, resource_url should be the collection URL without $ref + the ID
+		baseUrl := strings.TrimSuffix(urlValue, "/$ref")
+		resourceUrl = fmt.Sprintf("%s/%s", baseUrl, id)
+	} else {
+		// For regular URLs, resource_url is url + ID
+		resourceUrl = fmt.Sprintf("%s/%s", urlValue, id)
+	}
+
 	model := &MSGraphResourceModel{
 		Id:                    types.StringValue(id),
+		ResourceUrl:           types.StringValue(resourceUrl),
 		Url:                   types.StringValue(urlValue),
 		ApiVersion:            types.StringValue(apiVersion),
 		IgnoreMissingProperty: types.BoolValue(true),

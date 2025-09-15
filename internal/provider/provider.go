@@ -434,6 +434,7 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 func (p *MSGraphProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		services.NewMSGraphResource,
+		services.NewMSGraphResourceAction,
 		services.NewMSGraphUpdateResource,
 		services.NewMSGraphResourceCollection,
 	}
@@ -442,6 +443,7 @@ func (p *MSGraphProvider) Resources(ctx context.Context) []func() resource.Resou
 func (p *MSGraphProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		services.NewMSGraphDataSource,
+		services.NewMSGraphResourceActionDataSource,
 	}
 }
 

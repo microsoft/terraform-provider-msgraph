@@ -3,6 +3,8 @@
 FEATURES:
 - **New Resource**: msgraph_update_resource
 - **New Resource**: msgraph_resource_collection
+- **New Resource**: msgraph_resource_action
+- **New Data Source**: msgraph_resource_action
 
 ENHANCEMENTS:
 - `msgraph` resources and data sources now support `retry` configuration to handle transient failures.
@@ -11,6 +13,7 @@ ENHANCEMENTS:
 - `msgraph` resource and data source: support for `timeouts` configuration block
 - `msgraph_resource`: Update operations now send only changed fields in the request body to Microsoft Graph (minimal PATCH payloads) reducing unnecessary updates.
 - `msgraph_update_resource`: Create operations send the full body, while subsequent updates send only changed fields computed from prior state.
+- `msgraph_resource`: Added `resource_url` computed attribute that provides the full URL path to the resource instance.
 
 BUG FIXES:
 - Fixed an issue where `msgraph_resource` resource did not wait for the resource to be fully provisioned before completing.

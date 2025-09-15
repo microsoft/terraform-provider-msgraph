@@ -278,6 +278,58 @@ func (client *MSGraphClient) Delete(ctx context.Context, url string, apiVersion 
 	return nil
 }
 
+func (client *MSGraphClient) Action(ctx context.Context, method string, url string, apiVersion string, body interface{}, options RequestOptions) (interface{}, error) {
+	// apply per-request retry options via context
+	if options.RetryOptions != nil {
+		ctx = policy.WithRetryOptions(ctx, *options.RetryOptions)
+	}
+	
+	req, err := runtime.NewRequest(ctx, method, runtime.JoinPaths(client.host, apiVersion, url))
+	if err != nil {
+		return nil, err
+	}
+	
+	reqQP := req.Raw().URL.Query()
+	for key, value := range options.QueryParameters {
+		reqQP.Set(key, value)
+	}
+	req.Raw().URL.RawQuery = reqQP.Encode()
+	req.Raw().Header.Set("Accept", "application/json")
+	for key, value := range options.Headers {
+		req.Raw().Header.Set(key, value)
+	}
+	
+	// Set request body if provided
+	if body != nil {
+		if err := runtime.MarshalAsJSON(req, body); err != nil {
+			return nil, err
+		}
+		req.Raw().Header.Set("Content-Type", "application/json")
+	}
+	
+	resp, err := client.pl.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Check for successful status codes (2xx range)
+	if !runtime.HasStatusCode(resp, http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNoContent) {
+		return nil, runtime.NewResponseError(resp)
+	}
+	
+	// For methods that typically don't return a body (like DELETE), or if response is empty
+	if resp.StatusCode == http.StatusNoContent || resp.ContentLength == 0 {
+		return nil, nil
+	}
+	
+	var responseBody interface{}
+	if err := runtime.UnmarshalAsJSON(resp, &responseBody); err != nil {
+		return nil, err
+	}
+	
+	return responseBody, nil
+}
+
 func (client *MSGraphClient) GraphBaseUrl() string {
 	return client.host
 }

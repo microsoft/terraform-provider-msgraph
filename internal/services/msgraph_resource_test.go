@@ -32,6 +32,7 @@ func TestAcc_ResourceBasic(t *testing.T) {
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
+				check.That(data.ResourceName).Key("resource_url").MatchesRegex(regexp.MustCompile(`^applications/[a-f0-9\-]+$`)),
 			),
 		},
 		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
@@ -48,6 +49,8 @@ func TestAcc_ResourceUpdate(t *testing.T) {
 			Config: r.basic(data),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+				check.That(data.ResourceName).Key("resource_url").MatchesRegex(regexp.MustCompile(`^applications/[a-f0-9\-]+$`)),
 			),
 		},
 		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
@@ -55,6 +58,8 @@ func TestAcc_ResourceUpdate(t *testing.T) {
 			Config: r.basicUpdate(data),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+				check.That(data.ResourceName).Key("resource_url").MatchesRegex(regexp.MustCompile(`^applications/[a-f0-9\-]+$`)),
 			),
 		},
 		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
@@ -75,6 +80,7 @@ func TestAcc_ResourceGroupMember(t *testing.T) {
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
 				check.That(data.ResourceName).Key("id").MatchesOtherKey(check.That("msgraph_resource.servicePrincipal_application").Key("id")),
+				check.That(data.ResourceName).Key("resource_url").MatchesRegex(regexp.MustCompile(`^groups/[a-f0-9\-]+/members/[a-f0-9\-]+$`)),
 			),
 		},
 		importStep,
@@ -92,6 +98,7 @@ func TestAcc_ResourceIgnoreMissingProperty(t *testing.T) {
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
+				check.That(data.ResourceName).Key("resource_url").MatchesRegex(regexp.MustCompile(`^groups/[a-f0-9\-]+$`)),
 			),
 		},
 		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
@@ -112,6 +119,7 @@ func TestAcc_ResourceGroupOwnerBind_UpdateDisplayName(t *testing.T) {
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
+				check.That(data.ResourceName).Key("resource_url").MatchesRegex(regexp.MustCompile(`^groups/[a-f0-9\-]+$`)),
 			),
 		},
 		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
@@ -120,6 +128,7 @@ func TestAcc_ResourceGroupOwnerBind_UpdateDisplayName(t *testing.T) {
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
+				check.That(data.ResourceName).Key("resource_url").MatchesRegex(regexp.MustCompile(`^groups/[a-f0-9\-]+$`)),
 			),
 		},
 		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
@@ -137,6 +146,7 @@ func TestAcc_ResourceRetry(t *testing.T) {
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
+				check.That(data.ResourceName).Key("resource_url").MatchesRegex(regexp.MustCompile(`^applications/[a-f0-9\-]+$`)),
 			),
 		},
 		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...),
@@ -167,6 +177,8 @@ func TestAcc_ResourceTimeouts_Update(t *testing.T) {
 			Config: r.basic(data),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+				check.That(data.ResourceName).Key("resource_url").MatchesRegex(regexp.MustCompile(`^applications/[a-f0-9\-]+$`)),
 			),
 		},
 		{
