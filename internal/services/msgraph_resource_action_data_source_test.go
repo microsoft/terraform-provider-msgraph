@@ -2,7 +2,6 @@ package services_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -25,7 +24,7 @@ func TestAcc_DataSourceResourceActionBasic(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.basic(data),
+			Config: r.basic(),
 			Check:  resource.ComposeTestCheckFunc(),
 		},
 	})
@@ -38,7 +37,7 @@ func TestAcc_DataSourceResourceActionWithQueryParams(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.withQueryParams(data),
+			Config: r.withQueryParams(),
 			Check:  resource.ComposeTestCheckFunc(),
 		},
 	})
@@ -51,7 +50,7 @@ func TestAcc_DataSourceResourceActionWithHeaders(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.withHeaders(data),
+			Config: r.withHeaders(),
 			Check:  resource.ComposeTestCheckFunc(),
 		},
 	})
@@ -64,14 +63,14 @@ func TestAcc_DataSourceResourceActionWithBody(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.withBody(data),
+			Config: r.withBody(),
 			Check:  resource.ComposeTestCheckFunc(),
 		},
 	})
 }
 
-func (r MSGraphResourceActionDataSourceTestResource) basic(data acceptance.TestData) string {
-	return fmt.Sprintf(`
+func (r MSGraphResourceActionDataSourceTestResource) basic() string {
+	return `
 provider "msgraph" {}
 
 resource "msgraph_resource" "group" {
@@ -93,11 +92,11 @@ data "msgraph_resource_action" "test" {
   action       = "members"
   method       = "GET"
 }
-`)
+`
 }
 
-func (r MSGraphResourceActionDataSourceTestResource) withQueryParams(data acceptance.TestData) string {
-	return fmt.Sprintf(`
+func (r MSGraphResourceActionDataSourceTestResource) withQueryParams() string {
+	return `
 provider "msgraph" {}
 
 resource "msgraph_resource" "group" {
@@ -124,11 +123,11 @@ data "msgraph_resource_action" "test" {
     "$top"    = ["5"]
   }
 }
-`)
+`
 }
 
-func (r MSGraphResourceActionDataSourceTestResource) withHeaders(data acceptance.TestData) string {
-	return fmt.Sprintf(`
+func (r MSGraphResourceActionDataSourceTestResource) withHeaders() string {
+	return `
 provider "msgraph" {}
 
 resource "msgraph_resource" "group" {
@@ -154,11 +153,11 @@ data "msgraph_resource_action" "test" {
     "X-Custom-Header" = "test-value"
   }
 }
-`)
+`
 }
 
-func (r MSGraphResourceActionDataSourceTestResource) withBody(data acceptance.TestData) string {
-	return fmt.Sprintf(`
+func (r MSGraphResourceActionDataSourceTestResource) withBody() string {
+	return `
 provider "msgraph" {}
 
 resource "msgraph_resource" "group" {
@@ -188,5 +187,5 @@ data "msgraph_resource_action" "test" {
     result = "value"
   }
 }
-`)
+`
 }

@@ -2,7 +2,6 @@ package services_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -21,7 +20,7 @@ func TestAcc_ResourceActionBasic(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.basic(data),
+			Config: r.basic(),
 			Check:  resource.ComposeTestCheckFunc(),
 		},
 	})
@@ -34,7 +33,7 @@ func TestAcc_ResourceActionWithQueryParams(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.withQueryParams(data),
+			Config: r.withQueryParams(),
 			Check:  resource.ComposeTestCheckFunc(),
 		},
 	})
@@ -47,7 +46,7 @@ func TestAcc_ResourceActionWithHeaders(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.withHeaders(data),
+			Config: r.withHeaders(),
 			Check:  resource.ComposeTestCheckFunc(),
 		},
 	})
@@ -60,7 +59,7 @@ func TestAcc_ResourceActionWithExportValues(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.withExportValues(data),
+			Config: r.withExportValues(),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Key("output.%").HasValue("2"),
 			),
@@ -73,8 +72,8 @@ func (r MSGraphResourceActionTestResource) Exists(ctx context.Context, clients *
 	return &exists, nil
 }
 
-func (r MSGraphResourceActionTestResource) basic(data acceptance.TestData) string {
-	return fmt.Sprintf(`
+func (r MSGraphResourceActionTestResource) basic() string {
+	return `
 provider "msgraph" {}
 
 resource "msgraph_resource" "group" {
@@ -99,11 +98,11 @@ resource "msgraph_resource_action" "test" {
     displayName = "Updated Group Name"
   }
 }
-`)
+`
 }
 
-func (r MSGraphResourceActionTestResource) withQueryParams(data acceptance.TestData) string {
-	return fmt.Sprintf(`
+func (r MSGraphResourceActionTestResource) withQueryParams() string {
+	return `
 provider "msgraph" {}
 
 resource "msgraph_resource" "group" {
@@ -132,11 +131,11 @@ resource "msgraph_resource_action" "test" {
     displayName = "Updated Group Name with Query Params"
   }
 }
-`)
+`
 }
 
-func (r MSGraphResourceActionTestResource) withHeaders(data acceptance.TestData) string {
-	return fmt.Sprintf(`
+func (r MSGraphResourceActionTestResource) withHeaders() string {
+	return `
 provider "msgraph" {}
 
 resource "msgraph_resource" "group" {
@@ -166,11 +165,11 @@ resource "msgraph_resource_action" "test" {
     displayName = "Updated Group Name with Headers"
   }
 }
-`)
+`
 }
 
-func (r MSGraphResourceActionTestResource) withExportValues(data acceptance.TestData) string {
-	return fmt.Sprintf(`
+func (r MSGraphResourceActionTestResource) withExportValues() string {
+	return `
 provider "msgraph" {}
 
 resource "msgraph_resource" "group" {
@@ -200,5 +199,5 @@ resource "msgraph_resource_action" "test" {
     group_name = "displayName"
   }
 }
-`)
+`
 }
