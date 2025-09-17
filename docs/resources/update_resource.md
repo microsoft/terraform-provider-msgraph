@@ -20,30 +20,29 @@ This resource can manage a subset of any existing Microsoft Graph resource's pro
      msgraph = {
        source = "Microsoft/msgraph"
      }
+     azuread = {
+       source = "hashicorp/azuread"
+     }
    }
  }
  
  provider "msgraph" {}
+ provider "azuread" {}
  
- # This example creates an application first (so we have something to update),
+ # This example creates an application using azuread provider first (so we have something to update),
  # then uses msgraph_update_resource to PATCH its displayName.
  
- resource "msgraph_resource" "application" {
-   url = "applications"
-   body = {
-     displayName = "Demo App"
-   }
+ resource "azuread_application" "application" {
+   display_name = "Demo App"
  
-   # We ignore the displayName change here because the update is handled by
-   # the separate msgraph_update_resource below.
    lifecycle {
-     ignore_changes = [body.displayName]
+     ignore_changes = [display_name]
    }
  }
  
  resource "msgraph_update_resource" "application_update" {
    # Point directly at the item URL you want to PATCH
-   url = "applications/${msgraph_resource.application.id}"
+   url = "applications/${azuread_application.application.object_id}"
  
    body = {
      displayName = "Demo App Updated"
