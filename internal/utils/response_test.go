@@ -188,4 +188,3 @@ func TestResponseErrorWasStatusCode(t *testing.T) {
 		})
 	}
 }
-
