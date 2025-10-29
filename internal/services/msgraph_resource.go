@@ -452,12 +452,26 @@ func (r *MSGraphResource) ImportState(ctx context.Context, req resource.ImportSt
 	if strings.HasSuffix(parsedUrl.Path, "/$ref") {
 		reqIdWithoutRef := strings.TrimSuffix(parsedUrl.Path, "/$ref")
 		lastIndex := strings.LastIndex(reqIdWithoutRef, "/")
+		if lastIndex == -1 {
+			resp.Diagnostics.AddError(
+				"Invalid Import ID",
+				fmt.Sprintf("The import ID must be in the format 'url/id' or 'url/id/$ref'. For example: 'identity/conditionalAccess/policies/{policy-id}'. Got: %s", req.ID),
+			)
+			return
+		}
 		id = reqIdWithoutRef[lastIndex+1:]
 		urlValue = reqIdWithoutRef[0:lastIndex]
 		urlValue = strings.TrimPrefix(urlValue, "/")
 		urlValue = fmt.Sprintf("%s/$ref", urlValue)
 	} else {
 		lastIndex := strings.LastIndex(parsedUrl.Path, "/")
+		if lastIndex == -1 {
+			resp.Diagnostics.AddError(
+				"Invalid Import ID",
+				fmt.Sprintf("The import ID must be in the format 'url/id'. For example: 'identity/conditionalAccess/policies/{policy-id}'. Got: %s", req.ID),
+			)
+			return
+		}
 		id = parsedUrl.Path[lastIndex+1:]
 		urlValue = strings.TrimPrefix(parsedUrl.Path[0:lastIndex], "/")
 	}

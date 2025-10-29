@@ -188,6 +188,28 @@ func TestAcc_ResourceTimeouts_Update(t *testing.T) {
 	})
 }
 
+func TestAcc_ResourceImport_InvalidIDFormat(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.basic(data),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+			),
+		},
+		{
+			ResourceName:      data.ResourceName,
+			ImportState:       true,
+			ImportStateId:     "00000000-0000-0000-0000-000000000000", // Invalid: just an ID without path
+			ExpectError:       regexp.MustCompile(`Invalid Import ID`),
+			ImportStateVerify: false,
+		},
+	})
+}
+
 func (r MSGraphTestResource) Exists(ctx context.Context, client *clients.Client, state *terraform.InstanceState) (*bool, error) {
 	apiVersion := state.Attributes["api_version"]
 	url := state.Attributes["url"]
