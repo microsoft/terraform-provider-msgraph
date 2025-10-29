@@ -75,3 +75,4 @@ provider "msgraph" {
 - `use_cli` (Boolean) Should Azure CLI be used for authentication? This can also be sourced from the `ARM_USE_CLI` environment variable. Defaults to `true`.
 - `use_msi` (Boolean) Should Managed Identity be used for Authentication? This can also be sourced from the `ARM_USE_MSI` Environment Variable. Defaults to `false`.
 - `use_oidc` (Boolean) Should OIDC be used for Authentication? This can also be sourced from the `ARM_USE_OIDC` Environment Variable. Defaults to `false`.
+- `use_powershell` (Boolean) Should Azure PowerShell be used for authentication? This can also be sourced from the `ARM_USE_POWERSHELL` environment variable. Defaults to `false`.

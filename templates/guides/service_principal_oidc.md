@@ -9,6 +9,7 @@ description: |-
 # Authenticating using a Service Principal and OpenID Connect
 
 * [Authenticating to Azure using the Azure CLI](azure_cli.html)
+* [Authenticating to Azure using Azure PowerShell](azure_powershell.html)
 * [Authenticating to Azure using Managed Identity](managed_service_identity.html)
 * [Authenticating to Azure using a Service Principal and a Client Certificate](service_principal_client_certificate.html)
 * [Authenticating to Azure using a Service Principal and a Client Secret](service_principal_client_secret.html)
@@ -16,7 +17,7 @@ description: |-
 
 ---
 
-We recommend using either a Service Principal or Managed Identity when running Terraform non-interactively (such as when running Terraform in a CI server) - and authenticating using the Azure CLI when running Terraform locally.
+We recommend using either a Service Principal or Managed Identity when running Terraform non-interactively (such as when running Terraform in a CI server) - and authenticating using the Azure CLI or Azure PowerShell when running Terraform locally.
 
 Once you have configured a Service Principal as described in this guide, you should follow the [Configuring a Service Principal for managing Azure Active Directory](service_principal_configuration.html) guide to grant the Service Principal necessary permissions to create and modify Azure Active Directory objects such as users and groups.
 
