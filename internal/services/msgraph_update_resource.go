@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -51,10 +52,12 @@ type MSGraphUpdateResourceModel struct {
 	Id                    types.String      `tfsdk:"id"`
 	ApiVersion            types.String      `tfsdk:"api_version"`
 	Url                   types.String      `tfsdk:"url"`
+	Method                types.String      `tfsdk:"method"`
 	Body                  types.Dynamic     `tfsdk:"body"`
 	IgnoreMissingProperty types.Bool        `tfsdk:"ignore_missing_property"`
 	UpdateQueryParameters types.Map         `tfsdk:"update_query_parameters"`
 	ReadQueryParameters   types.Map         `tfsdk:"read_query_parameters"`
+	Headers               types.Map         `tfsdk:"headers"`
 	ResponseExportValues  map[string]string `tfsdk:"response_export_values"`
 	Retry                 retry.Value       `tfsdk:"retry"`
 	Output                types.Dynamic     `tfsdk:"output"`
@@ -95,6 +98,16 @@ func (r *MSGraphUpdateResource) Schema(ctx context.Context, req resource.SchemaR
 				Default: stringdefault.StaticString("v1.0"),
 			},
 
+			"method": schema.StringAttribute{
+				MarkdownDescription: "The HTTP method to use for the update request. Common methods include `GET`, `POST`, `PATCH`, `DELETE`, and `PUT`.",
+				Optional:            true,
+				Computed:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete, http.MethodPut),
+				},
+				Default: stringdefault.StaticString("PATCH"),
+			},
+
 			"body": schema.DynamicAttribute{
 				MarkdownDescription: docstrings.Body(),
 				Optional:            true,
@@ -121,6 +134,12 @@ func (r *MSGraphUpdateResource) Schema(ctx context.Context, req resource.SchemaR
 				},
 				Optional:            true,
 				MarkdownDescription: "A mapping of query parameters to be sent with the read request.",
+			},
+
+			"headers": schema.MapAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "A mapping of HTTP headers to be sent with the update request. Note that authentication headers are automatically handled.",
 			},
 
 			"response_export_values": schema.MapAttribute{
@@ -198,6 +217,8 @@ func (r *MSGraphUpdateResource) CreateUpdate(ctx context.Context, plan tfsdk.Pla
 	}
 
 	options := clients.RequestOptions{
+		Method:          model.Method.ValueString(),
+		Headers:         AsMapOfString(model.Headers),
 		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.UpdateQueryParameters)),
 		RetryOptions:    clients.NewRetryOptions(model.Retry),
 	}

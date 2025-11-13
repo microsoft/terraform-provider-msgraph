@@ -27,6 +27,7 @@ var DefaultRetryableReadAfterCreateStatusCodes = []int{
 }
 
 type RequestOptions struct {
+	Method          string
 	Headers         map[string]string
 	QueryParameters map[string]string
 	RetryOptions    *policy.RetryOptions

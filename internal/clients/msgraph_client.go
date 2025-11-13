@@ -215,7 +215,14 @@ func (client *MSGraphClient) Update(ctx context.Context, url string, apiVersion 
 	if options.RetryOptions != nil {
 		ctx = policy.WithRetryOptions(ctx, *options.RetryOptions)
 	}
-	req, err := runtime.NewRequest(ctx, http.MethodPatch, runtime.JoinPaths(client.host, apiVersion, url))
+
+	// Determine HTTP method - use Method from options if provided, otherwise default to PATCH
+	method := options.Method
+	if method == "" {
+		method = http.MethodPatch
+	}
+
+	req, err := runtime.NewRequest(ctx, method, runtime.JoinPaths(client.host, apiVersion, url))
 	if err != nil {
 		return nil, err
 	}

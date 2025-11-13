@@ -107,6 +107,21 @@ func TestAcc_UpdateResourceRetry(t *testing.T) {
 	})
 }
 
+func TestAcc_UpdateResourceWithHeaders(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_update_resource", "test")
+
+	r := MSGraphTestUpdateResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.withHeaders(),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+			),
+		},
+	})
+}
+
 func TestAcc_UpdateResource_GroupOwnerBind_UpdateDisplayName(t *testing.T) {
 	data := acceptance.BuildTestData(t, "msgraph_update_resource", "test")
 	r := MSGraphTestUpdateResource{}
@@ -253,6 +268,35 @@ resource "msgraph_update_resource" "test" {
       ".*throttl.*",
       "temporary error",
     ]
+  }
+}
+`
+}
+
+func (r MSGraphTestUpdateResource) withHeaders() string {
+	return `
+resource "msgraph_resource" "application" {
+  url = "applications"
+  body = {
+    displayName = "Demo App"
+  }
+
+  lifecycle {
+    ignore_changes = [body.displayName]
+  }
+}
+
+resource "msgraph_update_resource" "test" {
+  url = "applications/${msgraph_resource.application.id}"
+  method = "PATCH"
+  
+  headers = {
+    "X-Custom-Header" = "test-value"
+    "X-Request-ID"    = "test-123"
+  }
+
+  body = {
+    displayName = "Demo App Updated With Headers"
   }
 }
 `
