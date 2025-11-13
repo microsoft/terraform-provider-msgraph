@@ -99,11 +99,11 @@ func (r *MSGraphUpdateResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 
 			"method": schema.StringAttribute{
-				MarkdownDescription: "The HTTP method to use for the update request. Common methods include `GET`, `POST`, `PATCH`, `DELETE`, and `PUT`.",
+				MarkdownDescription: "The HTTP method to use for the update request. Allowed methods are `PATCH` and `PUT`.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
-					stringvalidator.OneOf(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete, http.MethodPut),
+					stringvalidator.OneOf(http.MethodPatch, http.MethodPut),
 				},
 				Default: stringdefault.StaticString("PATCH"),
 			},

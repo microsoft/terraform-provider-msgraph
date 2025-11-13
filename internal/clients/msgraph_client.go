@@ -217,6 +217,8 @@ func (client *MSGraphClient) Update(ctx context.Context, url string, apiVersion 
 	}
 
 	// Determine HTTP method - use Method from options if provided, otherwise default to PATCH
+	// Todo: Should probably validate that the method is one of PATCH or PUT. Just in case.
+
 	method := options.Method
 	if method == "" {
 		method = http.MethodPatch
