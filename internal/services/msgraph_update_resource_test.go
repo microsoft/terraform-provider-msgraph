@@ -287,9 +287,9 @@ resource "msgraph_resource" "application" {
 }
 
 resource "msgraph_update_resource" "test" {
-  url = "applications/${msgraph_resource.application.id}"
+  url    = "applications/${msgraph_resource.application.id}"
   method = "PATCH"
-  
+
   headers = {
     "X-Custom-Header" = "test-value"
     "X-Request-ID"    = "test-123"
