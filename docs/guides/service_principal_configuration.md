@@ -9,13 +9,14 @@ subcategory: "Authentication"
 Terraform supports a number of different methods for authenticating to Azure:
 
 * [Authenticating to Azure using the Azure CLI](azure_cli.html)
+* [Authenticating to Azure using Azure PowerShell](azure_powershell.html)
 * [Authenticating to Azure using Managed Identity](managed_service_identity.html)
 * [Authenticating to Azure using a Service Principal and a Client Certificate](service_principal_client_certificate.html)
 * [Authenticating to Azure using a Service Principal and a Client Secret](service_principal_client_secret.html)
 
 ---
 
-We recommend using either a Service Principal or Managed Identity when running Terraform non-interactively (such as when running Terraform in a CI server) - and authenticating using the Azure CLI when running Terraform locally.
+We recommend using either a Service Principal or Managed Identity when running Terraform non-interactively (such as when running Terraform in a CI server) - and authenticating using the Azure CLI or Azure PowerShell when running Terraform locally.
 
 ## Creating a Service Principal
 
@@ -47,7 +48,7 @@ After assigning permissions, you will need to grant consent for the service prin
 
 The Application now has the necessary permissions to administer your Azure Active Directory tenant.
 
-### Method 2: Directory Roles (recommended for users, i.e. Azure CLI authentication)
+### Method 2: Directory Roles (recommended for users, i.e. Azure CLI or Azure PowerShell authentication)
 
 With this method, you will assign directory roles to your User Principal, to grant the desired permissions to administer objects in your Azure Active Directory tenant. The following steps may need to be performed by an existing Global Administrator, if that is someone else.
 
@@ -67,11 +68,20 @@ Role                        | Description
 `Groups Administrator`      | Create and manage groups.
 `User Administrator`        | Create and manage users _and_ groups.
 
-Once the desired directory role has been assigned, you may need to obtain a new access token in order for the role to take effect. This can be performed by signing out and signing back in to the Azure CLI.
+Once the desired directory role has been assigned, you may need to obtain a new access token in order for the role to take effect. This can be performed by signing out and signing back in to the Azure CLI or Azure PowerShell.
+
+For Azure CLI:
 
 ```shell
 $ az logout
 $ az login --allow-no-subscriptions
+```
+
+For Azure PowerShell:
+
+```powershell
+Disconnect-AzAccount
+Connect-AzAccount
 ```
 
 [admin-roles-docs]: https://docs.microsoft.com/en-us/azure/active-directory/users-groups-roles/directory-assign-admin-roles

@@ -44,6 +44,7 @@ type MSGraphProviderModel struct {
 	OIDCAzureServiceConnectionID types.String `tfsdk:"oidc_azure_service_connection_id"`
 	UseOIDC                      types.Bool   `tfsdk:"use_oidc"`
 	UseCLI                       types.Bool   `tfsdk:"use_cli"`
+	UsePowerShell                types.Bool   `tfsdk:"use_powershell"`
 	UseMSI                       types.Bool   `tfsdk:"use_msi"`
 	UseAKSWorkloadIdentity       types.Bool   `tfsdk:"use_aks_workload_identity"`
 	PartnerID                    types.String `tfsdk:"partner_id"`
@@ -209,6 +210,12 @@ func (p *MSGraphProvider) Schema(ctx context.Context, req provider.SchemaRequest
 				MarkdownDescription: "Should Azure CLI be used for authentication? This can also be sourced from the `ARM_USE_CLI` environment variable. Defaults to `true`.",
 			},
 
+			// Azure PowerShell specific fields
+			"use_powershell": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Should Azure PowerShell be used for authentication? This can also be sourced from the `ARM_USE_POWERSHELL` environment variable. Defaults to `false`.",
+			},
+
 			// Managed Service Identity specific fields
 			"use_msi": schema.BoolAttribute{
 				Optional:            true,
@@ -364,6 +371,14 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 			model.UseCLI = types.BoolValue(v == "true")
 		} else {
 			model.UseCLI = types.BoolValue(true)
+		}
+	}
+
+	if model.UsePowerShell.IsNull() {
+		if v := os.Getenv("ARM_USE_POWERSHELL"); v != "" {
+			model.UsePowerShell = types.BoolValue(v == "true")
+		} else {
+			model.UsePowerShell = types.BoolValue(false)
 		}
 	}
 
@@ -526,6 +541,15 @@ func BuildChainedTokenCredential(model MSGraphProviderModel, options azidentity.
 		}
 	}
 
+	if model.UsePowerShell.ValueBool() {
+		log.Printf("[DEBUG] powershell credential enabled")
+		if cred, err := buildAzurePowerShellCredential(options); err == nil {
+			creds = append(creds, cred)
+		} else {
+			log.Printf("[DEBUG] failed to initialize powershell credential: %v", err)
+		}
+	}
+
 	if len(creds) == 0 {
 		return nil, fmt.Errorf("no credentials were successfully initialized")
 	}
@@ -639,6 +663,15 @@ func buildAzureCLICredential(options azidentity.DefaultAzureCredentialOptions) (
 		TenantID:                   options.TenantID,
 	}
 	return azidentity.NewAzureCLICredential(o)
+}
+
+func buildAzurePowerShellCredential(options azidentity.DefaultAzureCredentialOptions) (azcore.TokenCredential, error) {
+	log.Printf("[DEBUG] building azure powershell credential")
+	o := &azidentity.AzurePowerShellCredentialOptions{
+		AdditionallyAllowedTenants: options.AdditionallyAllowedTenants,
+		TenantID:                   options.TenantID,
+	}
+	return azidentity.NewAzurePowerShellCredential(o)
 }
 
 func buildAzurePipelinesCredential(model MSGraphProviderModel, options azidentity.DefaultAzureCredentialOptions) (azcore.TokenCredential, error) {

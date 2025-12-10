@@ -1,4 +1,16 @@
-## 0.2.0 (Unreleased)
+## 0.3.0 (Unreleased)
+
+FEATURES:
+- **New Authentication Method**: Azure PowerShell authentication support via `use_powershell` provider attribute
+
+ENHANCEMENTS:
+- provider: Added support for authenticating with Azure PowerShell via the `use_powershell` attribute and `ARM_USE_POWERSHELL` environment variable. This provides an alternative to Azure CLI authentication without the client ID permission limitations ([#67](https://github.com/microsoft/terraform-provider-msgraph/issues/67))
+
+DEPENDENCIES:
+- Updated `github.com/Azure/azure-sdk-for-go/sdk/azidentity` from v1.8.0 to v1.13.0 to enable Azure PowerShell authentication support
+- Updated `github.com/Azure/azure-sdk-for-go/sdk/azcore` from v1.16.0 to v1.19.1
+
+## 0.2.0
 
 FEATURES:
 - **New Resource**: msgraph_update_resource
