@@ -66,7 +66,7 @@ resource "msgraph_resource" "user2" {
 
 # Manage all group members as a collection
 resource "msgraph_resource_collection" "group_members" {
-  url           = "groups/${msgraph_resource.group.id}/members/$ref"
+  url = "groups/${msgraph_resource.group.id}/members/$ref"
   reference_ids = [
     msgraph_resource.user1.id,
     msgraph_resource.user2.id
@@ -91,7 +91,7 @@ data "azurerm_client_config" "current" {}
 
 # Manage group owners using resource collection
 resource "msgraph_resource_collection" "group_owners" {
-  url           = "groups/${msgraph_resource.group.id}/owners/$ref"
+  url = "groups/${msgraph_resource.group.id}/owners/$ref"
   reference_ids = [
     data.azurerm_client_config.current.object_id,
     msgraph_resource.manager_user.id
@@ -106,7 +106,7 @@ When managing service principals as group members, use the `beta` API version du
 ```terraform
 resource "msgraph_resource_collection" "group_members" {
   url         = "groups/${msgraph_resource.group.id}/members/$ref"
-  api_version = "beta"  # Required for service principals
+  api_version = "beta" # Required for service principals
   reference_ids = [
     msgraph_resource.sp_a.id,
     msgraph_resource.sp_b.id
@@ -186,13 +186,13 @@ resource "msgraph_resource" "group_with_relationships" {
     mailEnabled     = false
     mailNickname    = "devops-team"
     securityEnabled = true
-    
+
     # Set initial owners
     "owners@odata.bind" = [
       "https://graph.microsoft.com/v1.0/users/${data.azurerm_client_config.current.object_id}",
       "https://graph.microsoft.com/v1.0/users/${local.team_lead_id}"
     ]
-    
+
     # Set initial members
     "members@odata.bind" = [
       "https://graph.microsoft.com/v1.0/users/${local.developer1_id}",
@@ -209,7 +209,7 @@ resource "msgraph_resource" "application_with_owners" {
   url = "applications"
   body = {
     displayName = "API Gateway Application"
-    
+
     # Set application owners during creation
     "owners@odata.bind" = [
       "https://graph.microsoft.com/v1.0/servicePrincipals/${data.azurerm_client_config.current.object_id}",

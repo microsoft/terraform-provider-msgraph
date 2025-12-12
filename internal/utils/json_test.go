@@ -142,6 +142,159 @@ func TestDiffObject(t *testing.T) {
 			opt:  UpdateJsonOption{},
 			want: nil,
 		},
+		{
+			name: "odata.type unchanged but other field changed - should include odata.type (issue #59)",
+			old: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.ipNamedLocation",
+				"displayName": "Example Named Location",
+				"ipRanges": []interface{}{
+					map[string]interface{}{"@odata.type": "#microsoft.graph.iPv4CidrRange", "cidrAddress": "1.2.3.4/32"},
+					map[string]interface{}{"@odata.type": "#microsoft.graph.iPv4CidrRange", "cidrAddress": "1.2.3.5/32"},
+				},
+				"isTrusted": false,
+			},
+			newV: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.ipNamedLocation",
+				"displayName": "Example Named Location",
+				"ipRanges": []interface{}{
+					map[string]interface{}{"@odata.type": "#microsoft.graph.iPv4CidrRange", "cidrAddress": "1.2.3.4/32"},
+				},
+				"isTrusted": false,
+			},
+			opt: UpdateJsonOption{},
+			want: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.ipNamedLocation",
+				"ipRanges": []interface{}{
+					map[string]interface{}{"@odata.type": "#microsoft.graph.iPv4CidrRange", "cidrAddress": "1.2.3.4/32"},
+				},
+			},
+		},
+		{
+			name: "odata.type unchanged, displayName changed, ipRanges unchanged - should include odata.type",
+			old: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.ipNamedLocation",
+				"displayName": "Example Named Location",
+				"ipRanges": []interface{}{
+					map[string]interface{}{"@odata.type": "#microsoft.graph.iPv4CidrRange", "cidrAddress": "1.2.3.4/32"},
+					map[string]interface{}{"@odata.type": "#microsoft.graph.iPv4CidrRange", "cidrAddress": "1.2.3.5/32"},
+				},
+				"isTrusted": false,
+			},
+			newV: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.ipNamedLocation",
+				"displayName": "Updated Named Location",
+				"ipRanges": []interface{}{
+					map[string]interface{}{"@odata.type": "#microsoft.graph.iPv4CidrRange", "cidrAddress": "1.2.3.4/32"},
+					map[string]interface{}{"@odata.type": "#microsoft.graph.iPv4CidrRange", "cidrAddress": "1.2.3.5/32"},
+				},
+				"isTrusted": false,
+			},
+			opt: UpdateJsonOption{},
+			want: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.ipNamedLocation",
+				"displayName": "Updated Named Location",
+			},
+		},
+		{
+			name: "odata.type in nested objects should be preserved",
+			old: map[string]interface{}{
+				"name": "test",
+				"settings": map[string]interface{}{
+					"@odata.type": "#microsoft.graph.someType",
+					"value":       "old",
+				},
+			},
+			newV: map[string]interface{}{
+				"name": "test",
+				"settings": map[string]interface{}{
+					"@odata.type": "#microsoft.graph.someType",
+					"value":       "new",
+				},
+			},
+			opt: UpdateJsonOption{},
+			want: map[string]interface{}{
+				"settings": map[string]interface{}{
+					"@odata.type": "#microsoft.graph.someType",
+					"value":       "new",
+				},
+			},
+		},
+		{
+			name: "multiple odata fields should all be preserved",
+			old: map[string]interface{}{
+				"@odata.type":    "#microsoft.graph.someType",
+				"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#test",
+				"name":           "old",
+			},
+			newV: map[string]interface{}{
+				"@odata.type":    "#microsoft.graph.someType",
+				"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#test",
+				"name":           "new",
+			},
+			opt: UpdateJsonOption{},
+			want: map[string]interface{}{
+				"@odata.type":    "#microsoft.graph.someType",
+				"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#test",
+				"name":           "new",
+			},
+		},
+		{
+			name: "odata.type added in new should be included",
+			old: map[string]interface{}{
+				"name": "test",
+			},
+			newV: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.someType",
+				"name":        "test",
+			},
+			opt: UpdateJsonOption{},
+			want: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.someType",
+			},
+		},
+		{
+			name: "odata.type changed should be included",
+			old: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.ipNamedLocation",
+				"name":        "test",
+			},
+			newV: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.countryNamedLocation",
+				"name":        "test",
+			},
+			opt: UpdateJsonOption{},
+			want: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.countryNamedLocation",
+			},
+		},
+		{
+			name: "only odata fields unchanged with no other changes -> nil",
+			old: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.someType",
+				"name":        "test",
+			},
+			newV: map[string]interface{}{
+				"@odata.type": "#microsoft.graph.someType",
+				"name":        "test",
+			},
+			opt:  UpdateJsonOption{},
+			want: nil,
+		},
+		{
+			name: "regular fields starting with @ but not odata should not be treated specially",
+			old: map[string]interface{}{
+				"@custom.field": "value1",
+				"name":          "test",
+			},
+			newV: map[string]interface{}{
+				"@custom.field": "value1",
+				"name":          "changed",
+			},
+			opt: UpdateJsonOption{},
+			want: map[string]interface{}{
+				"name": "changed",
+			},
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {

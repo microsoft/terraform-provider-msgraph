@@ -67,13 +67,13 @@ resource "msgraph_resource" "group_with_relationships" {
     mailEnabled     = false
     mailNickname    = "devops-team"
     securityEnabled = true
-    
+
     # Set initial owners using OData bind syntax
     "owners@odata.bind" = [
       "https://graph.microsoft.com/v1.0/users/${data.azurerm_client_config.current.object_id}",
       "https://graph.microsoft.com/v1.0/users/${msgraph_resource.manager_user.id}"
     ]
-    
+
     # Set initial members using OData bind syntax
     "members@odata.bind" = [
       "https://graph.microsoft.com/v1.0/users/${msgraph_resource.user1.id}",

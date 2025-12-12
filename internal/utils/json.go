@@ -205,6 +205,11 @@ func isZeroValue(value interface{}) bool {
 // - a map[string]interface{} with only changed fields for objects
 // - a full new array for arrays when they differ
 // - the new primitive value for scalars when they differ
+//
+// Special handling: OData metadata fields (keys starting with "@odata.") are always
+// included in the result when they exist in the new object and there are other changes.
+// This is required for Microsoft Graph API endpoints that use polymorphic types and
+// need the discriminator field (@odata.type) to be present in PATCH requests.
 func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) interface{} {
 	if reflect.DeepEqual(old, new) {
 		return nil
@@ -224,6 +229,20 @@ func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) inter
 					res[key] = newVal
 				}
 			}
+
+			// If we have changes, also include any @odata.* fields from newMap
+			// even if they haven't changed. These are OData metadata fields that
+			// some Microsoft Graph endpoints require in PATCH requests.
+			if len(res) > 0 {
+				for key, newVal := range newMap {
+					// Only add @odata.* fields that aren't already in res
+					if strings.HasPrefix(key, "@odata.") && res[key] == nil {
+						// Field exists and unchanged, but include it anyway for @odata fields
+						res[key] = newVal
+					}
+				}
+			}
+
 			if len(res) == 0 {
 				return nil
 			}

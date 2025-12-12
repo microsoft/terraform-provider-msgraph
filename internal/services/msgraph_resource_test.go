@@ -19,6 +19,15 @@ func defaultIgnores() []string {
 	return []string{"body", "output", "retry"}
 }
 
+func timeProviderExternalProvider() map[string]resource.ExternalProvider {
+	return map[string]resource.ExternalProvider{
+		"time": {
+			Source:            "hashicorp/time",
+			VersionConstraint: ">= 0.9.0",
+		},
+	}
+}
+
 type MSGraphTestResource struct{}
 
 func TestAcc_ResourceBasic(t *testing.T) {
@@ -184,6 +193,39 @@ func TestAcc_ResourceTimeouts_Update(t *testing.T) {
 		{
 			Config:      r.withUpdateTimeout(),
 			ExpectError: regexp.MustCompile(`context deadline exceeded`),
+		},
+	})
+}
+
+func TestAcc_ResourceNamedLocationWithODataType(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.namedLocation("Example Named Location", []string{"1.2.3.4/32", "1.2.3.5/32"}),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+			ExternalProviders: timeProviderExternalProvider(),
+		},
+		{
+			Config: r.namedLocation("Updated Named Location", []string{"1.2.3.4/32", "1.2.3.5/32"}),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+			ExternalProviders: timeProviderExternalProvider(),
+		},
+		{
+			Config: r.namedLocation("Updated Named Location", []string{"1.2.3.4/32"}),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+			ExternalProviders: timeProviderExternalProvider(),
 		},
 	})
 }
@@ -378,4 +420,42 @@ resource "msgraph_resource" "test" {
   }
 }
 `
+}
+
+func (r MSGraphTestResource) namedLocation(displayName string, cidrAddresses []string) string {
+	ipRangesConfig := ""
+	for i, cidr := range cidrAddresses {
+		if i > 0 {
+			ipRangesConfig += ",\n      "
+		}
+		ipRangesConfig += fmt.Sprintf(`{
+        "@odata.type" = "#microsoft.graph.iPv4CidrRange"
+        cidrAddress   = "%s"
+      }`, cidr)
+	}
+
+	return fmt.Sprintf(`
+resource "msgraph_resource" "test" {
+  url = "identity/conditionalAccess/namedLocations"
+  body = {
+    displayName = "%s"
+    ipRanges = [
+      %s
+    ]
+    isTrusted     = false
+    "@odata.type" = "#microsoft.graph.ipNamedLocation"
+  }
+  response_export_values = {
+    id = "id"
+  }
+}
+
+resource "time_sleep" "wait" {
+  depends_on      = [msgraph_resource.test]
+  create_duration = "20s"
+  triggers = {
+    id = msgraph_resource.test.output.id
+  }
+}
+`, displayName, ipRangesConfig)
 }
