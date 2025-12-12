@@ -586,7 +586,7 @@ resource "msgraph_resource" "test" {
   }
 
   lifecycle {
-    ignore_changes = [ body ]
+    ignore_changes = [body]
   }
 }
 `, data.RandomString)
@@ -748,7 +748,7 @@ resource "azuread_application" "test" {
   display_name = "acctest%[1]s"
 
   lifecycle {
-    ignore_changes = [ owners ]
+    ignore_changes = [owners]
   }
 }
 
@@ -784,7 +784,7 @@ locals {
 resource "azuread_application" "test" {
   display_name = "acctest%[1]s"
   lifecycle {
-    ignore_changes = [ owners ]
+    ignore_changes = [owners]
   }
 }
 
@@ -899,12 +899,12 @@ resource "azuread_claims_mapping_policy" "test" {
     jsonencode(
       {
         ClaimsMappingPolicy = {
-          Version = 1
+          Version              = 1
           IncludeBasicClaimSet = "true"
           ClaimsSchema = [
             {
-              Source = "user"
-              ID = "employeeid"
+              Source       = "user"
+              ID           = "employeeid"
               JwtClaimType = "employeeid"
             },
           ]
@@ -939,12 +939,12 @@ resource "azuread_claims_mapping_policy" "test" {
     jsonencode(
       {
         ClaimsMappingPolicy = {
-          Version = 1
+          Version              = 1
           IncludeBasicClaimSet = "true"
           ClaimsSchema = [
             {
-              Source = "user"
-              ID = "employeeid"
+              Source       = "user"
+              ID           = "employeeid"
               JwtClaimType = "employeeid"
             },
           ]
@@ -961,7 +961,7 @@ moved {
 }
 
 locals {
-  policyObjectId = trimprefix(azuread_claims_mapping_policy.test.id,"/policies/claimsMappingPolicies/")
+  policyObjectId = trimprefix(azuread_claims_mapping_policy.test.id, "/policies/claimsMappingPolicies/")
 }
 
 resource "msgraph_resource" "test" {
