@@ -44,7 +44,7 @@ resource "msgraph_resource" "catalog" {
 }
 
 resource "msgraph_resource" "accessPackage" {
-  url = "identityGovernance/entitlementManagement/accessPackages"
+  url         = "identityGovernance/entitlementManagement/accessPackages"
   api_version = "beta"
   body = {
     catalogId   = msgraph_resource.catalog.id
@@ -54,8 +54,8 @@ resource "msgraph_resource" "accessPackage" {
 }
 
 resource "msgraph_resource" "accessPackageAssignmentPolicy" {
-  url = "identityGovernance/entitlementManagement/accessPackageAssignmentPolicies"
-  api_version = "beta"
+  url           = "identityGovernance/entitlementManagement/accessPackageAssignmentPolicies"
+  api_version   = "beta"
   update_method = "PUT"
   body = {
     accessPackageId = msgraph_resource.accessPackage.id

@@ -486,6 +486,7 @@ resource "time_sleep" "wait" {
 func (r MSGraphTestResource) updateMethod(displayName string) string {
 	return fmt.Sprintf(`
 
+
 resource "msgraph_resource" "group_example" {
   url = "groups"
   body = {
@@ -505,7 +506,7 @@ resource "msgraph_resource" "catalog_example" {
 }
 
 resource "msgraph_resource" "access_package_example" {
-  url = "identityGovernance/entitlementManagement/accessPackages"
+  url         = "identityGovernance/entitlementManagement/accessPackages"
   api_version = "beta"
   body = {
     catalogId   = msgraph_resource.catalog_example.id
@@ -515,8 +516,8 @@ resource "msgraph_resource" "access_package_example" {
 }
 
 resource "msgraph_resource" "test" {
-  url = "identityGovernance/entitlementManagement/accessPackageAssignmentPolicies"
-  api_version = "beta"
+  url           = "identityGovernance/entitlementManagement/accessPackageAssignmentPolicies"
+  api_version   = "beta"
   update_method = "PUT"
   body = {
     accessPackageId = msgraph_resource.access_package_example.id

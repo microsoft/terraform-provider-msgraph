@@ -18,7 +18,7 @@ resource "msgraph_resource" "catalog" {
 }
 
 resource "msgraph_resource" "accessPackage" {
-  url = "identityGovernance/entitlementManagement/accessPackages"
+  url         = "identityGovernance/entitlementManagement/accessPackages"
   api_version = "beta"
   body = {
     catalogId   = msgraph_resource.catalog.id
