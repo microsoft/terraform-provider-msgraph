@@ -182,13 +182,13 @@ resource "msgraph_resource" "group_with_relationships" {
     mailEnabled     = false
     mailNickname    = "devops-team"
     securityEnabled = true
-    
+
     # Set initial owners using OData bind syntax
     "owners@odata.bind" = [
       "https://graph.microsoft.com/v1.0/users/${data.azurerm_client_config.current.object_id}",
       "https://graph.microsoft.com/v1.0/users/${msgraph_resource.manager_user.id}"
     ]
-    
+
     # Set initial members using OData bind syntax
     "members@odata.bind" = [
       "https://graph.microsoft.com/v1.0/users/${msgraph_resource.user1.id}",
@@ -267,7 +267,7 @@ resource "msgraph_resource" "user3" {
 # Manage all group members as a collection (RECOMMENDED APPROACH)
 # This provides declarative management where you specify the complete desired state
 resource "msgraph_resource_collection" "group_members" {
-  url           = "groups/${msgraph_resource.group.id}/members/$ref"
+  url = "groups/${msgraph_resource.group.id}/members/$ref"
   reference_ids = [
     msgraph_resource.user1.id,
     msgraph_resource.user2.id,

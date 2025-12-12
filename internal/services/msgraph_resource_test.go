@@ -451,7 +451,7 @@ resource "msgraph_resource" "test" {
 }
 
 resource "time_sleep" "wait" {
-  depends_on = [msgraph_resource.test]
+  depends_on      = [msgraph_resource.test]
   create_duration = "20s"
   triggers = {
     id = msgraph_resource.test.output.id
