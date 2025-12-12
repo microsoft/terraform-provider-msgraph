@@ -230,6 +230,29 @@ func TestAcc_ResourceNamedLocationWithODataType(t *testing.T) {
 	})
 }
 
+func TestAcc_ResourceWithPutUpdateMethod(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.updateMethod("Example Policy"),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+		},
+		{
+			Config: r.updateMethod("Updated Example Policy"),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+		},
+	})
+}
+
 func TestAcc_ResourceImport_InvalidIDFormat(t *testing.T) {
 	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
 
@@ -458,4 +481,97 @@ resource "time_sleep" "wait" {
   }
 }
 `, displayName, ipRangesConfig)
+}
+
+func (r MSGraphTestResource) updateMethod(displayName string) string {
+	return fmt.Sprintf(`
+
+resource "msgraph_resource" "group_example" {
+  url = "groups"
+  body = {
+    displayName     = "group-name"
+    mailEnabled     = false
+    mailNickname    = "group-name"
+    securityEnabled = true
+  }
+}
+
+resource "msgraph_resource" "catalog_example" {
+  url = "identityGovernance/entitlementManagement/catalogs"
+  body = {
+    displayName = "example-catalog"
+    description = "Example catalog"
+  }
+}
+
+resource "msgraph_resource" "access_package_example" {
+  url = "identityGovernance/entitlementManagement/accessPackages"
+  api_version = "beta"
+  body = {
+    catalogId   = msgraph_resource.catalog_example.id
+    displayName = "access-package"
+    description = "Access Package"
+  }
+}
+
+resource "msgraph_resource" "test" {
+  url = "identityGovernance/entitlementManagement/accessPackageAssignmentPolicies"
+  api_version = "beta"
+  update_method = "PUT"
+  body = {
+    accessPackageId = msgraph_resource.access_package_example.id
+    displayName     = "%[1]s"
+    description     = "My assignment %[1]s"
+    expiration = {
+      type     = "afterDuration"
+      duration = "P90D"
+    }
+    requestorSettings = {
+      scopeType = "AllExistingDirectoryMemberUsers"
+    }
+    requestApprovalSettings = {
+      isApprovalRequired = true
+      approvalStages = [
+        {
+          approvalStageTimeOutInDays = 14
+          primaryApprovers = [
+            {
+              "@odata.type" = "#microsoft.graph.groupMembers"
+              groupId       = msgraph_resource.group_example.id
+              description   = "group-name"
+            }
+          ]
+        }
+      ]
+    }
+    reviewSettings = {
+      isEnabled          = true
+      expirationBehavior = "keepAccess"
+      isSelfReview       = true
+      schedule = {
+        startDateTime = "2025-12-12T00:00:00Z"
+        recurrence = {
+          pattern = {
+            type     = "weekly"
+            interval = 1
+          }
+          range = {
+            type      = "noEnd"
+            startDate = "2025-12-12"
+          }
+        }
+      }
+    }
+    questions = [
+      {
+        "@odata.type" = "#microsoft.graph.accessPackageTextInputQuestion"
+        text = {
+          defaultText = "hello, how are you?"
+        }
+        isRequired = false
+      }
+    ]
+  }
+}
+`, displayName)
 }

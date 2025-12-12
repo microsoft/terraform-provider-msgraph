@@ -66,6 +66,7 @@ type MSGraphResourceModel struct {
 	Retry                 retry.Value       `tfsdk:"retry"`
 	Output                types.Dynamic     `tfsdk:"output"`
 	Timeouts              timeouts.Value    `tfsdk:"timeouts"`
+	UpdateMethod          types.String      `tfsdk:"update_method"`
 }
 
 func (r *MSGraphResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -156,6 +157,14 @@ func (r *MSGraphResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"output": schema.DynamicAttribute{
 				MarkdownDescription: docstrings.Output(),
 				Computed:            true,
+			},
+
+			"update_method": schema.StringAttribute{
+				MarkdownDescription: "The HTTP method to use for updating the resource. Allowed values are `PATCH` (default) and `PUT`.",
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("PATCH", "PUT"),
+				},
 			},
 
 			"resource_url": schema.StringAttribute{
@@ -298,35 +307,50 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 		resp.Diagnostics.AddError("Failed to unmarshal body", err.Error())
 		return
 	}
-	var previousBody interface{}
-	if err := unmarshalBody(state.Body, &previousBody); err != nil {
-		resp.Diagnostics.AddError("Invalid body in prior state", fmt.Sprintf(`The state "body" is invalid: %s`, err.Error()))
-		return
+
+	options := clients.RequestOptions{
+		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.UpdateQueryParameters)),
+		RetryOptions:    clients.NewRetryOptions(model.Retry),
 	}
 
-	diffOption := utils.UpdateJsonOption{
-		IgnoreCasing:          false,
-		IgnoreMissingProperty: false,
-		IgnoreNullProperty:    false,
+	// default to PATCH
+	updateMethod := "PATCH"
+	if !model.UpdateMethod.IsNull() {
+		updateMethod = model.UpdateMethod.ValueString()
 	}
-	patchBody := utils.DiffObject(previousBody, requestBody, diffOption)
-
-	// If there's something to update, send PATCH
-	if !utils.IsEmptyObject(patchBody) {
-		options := clients.RequestOptions{
-			QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.UpdateQueryParameters)),
-			RetryOptions:    clients.NewRetryOptions(model.Retry),
-		}
-		_, err := r.client.Update(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), patchBody, options)
+	if updateMethod == "PUT" {
+		_, err := r.client.Action(ctx, "PUT", fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), requestBody, options)
 		if err != nil {
-			resp.Diagnostics.AddError("Failed to create resource", err.Error())
+			resp.Diagnostics.AddError("Failed to update resource", err.Error())
 			return
 		}
 	} else {
-		tflog.Info(ctx, "No changes detected in body, skipping update")
+		var previousBody interface{}
+		if err := unmarshalBody(state.Body, &previousBody); err != nil {
+			resp.Diagnostics.AddError("Invalid body in prior state", fmt.Sprintf(`The state "body" is invalid: %s`, err.Error()))
+			return
+		}
+
+		diffOption := utils.UpdateJsonOption{
+			IgnoreCasing:          false,
+			IgnoreMissingProperty: false,
+			IgnoreNullProperty:    false,
+		}
+		patchBody := utils.DiffObject(previousBody, requestBody, diffOption)
+
+		// If there's something to update, send PATCH
+		if !utils.IsEmptyObject(patchBody) {
+			_, err := r.client.Update(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), patchBody, options)
+			if err != nil {
+				resp.Diagnostics.AddError("Failed to create resource", err.Error())
+				return
+			}
+		} else {
+			tflog.Info(ctx, "No changes detected in body, skipping update")
+		}
 	}
 
-	options := clients.RequestOptions{
+	options = clients.RequestOptions{
 		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
 		RetryOptions:    clients.NewRetryOptions(model.Retry),
 	}

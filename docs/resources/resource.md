@@ -92,6 +92,7 @@ This resource can manage any Microsoft Graph API resource.
 To learn more about JMESPath, visit [JMESPath](https://jmespath.org/).
 - `retry` (Attributes) The retry object supports the following attributes: (see [below for nested schema](#nestedatt--retry))
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `update_method` (String) The HTTP method to use for updating the resource. Allowed values are `PATCH` (default) and `PUT`.
 - `update_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the update request.
 
 ### Read-Only

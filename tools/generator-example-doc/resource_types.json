@@ -38,5 +38,20 @@
     "resourceType": "users",
     "friendlyName": "user",
     "urlValue": "users"
+  },
+  {
+    "resourceType": "identityGovernance/entitlementManagement/accessPackageAssignmentPolicies",
+    "friendlyName": "access package assignment policy",
+    "urlValue": "identityGovernance/entitlementManagement/accessPackageAssignmentPolicies"
+  },
+  {
+    "resourceType": "identityGovernance/entitlementManagement/accessPackages",
+    "friendlyName": "access package",
+    "urlValue": "identityGovernance/entitlementManagement/accessPackages"
+  },
+  {
+    "resourceType": "identityGovernance/entitlementManagement/catalogs",
+    "friendlyName": "access package catalog",
+    "urlValue": "identityGovernance/entitlementManagement/catalogs"
   }
 ]
