@@ -265,7 +265,7 @@ func (r MSGraphTestResource) Exists(ctx context.Context, client *clients.Client,
 
 		found := false
 		if err != nil {
-			return &found, nil
+			return &found, err
 		}
 		// Check if state.ID exists in the responseBody
 		for _, refId := range referenceIds {
@@ -360,7 +360,7 @@ resource "msgraph_resource" "group" {
 }
 
 resource "msgraph_resource" "test" {
-  url = "groups/${msgraph_resource.group.id}/members/$ref"
+  url         = "groups/${msgraph_resource.group.id}/members/$ref"
   api_version = "beta"
   body = {
     "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/${msgraph_resource.servicePrincipal_application.id}"
