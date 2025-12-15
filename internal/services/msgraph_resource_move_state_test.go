@@ -272,26 +272,23 @@ func TestAcc_ResourceMoveState_DirectoryRoleMember(t *testing.T) {
 	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
 	r := MSGraphTestResource{}
 
-	data.RunAcceptanceTest(t, resource.TestCase{
-		PreCheck: func() { acceptance.PreCheck(t) },
-		Steps: []resource.TestStep{
-			{
-				Config:            r.moveStateDirectoryRoleMemberSetup(data),
-				ExternalProviders: externalProvidersAzureAD(),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("azuread_directory_role_member.test", "id"),
-				),
-			},
-			{
-				Config:            r.moveStateDirectoryRoleMemberMoved(data),
-				ExternalProviders: externalProvidersAzureAD(),
-				Check: resource.ComposeTestCheckFunc(
-					check.That(data.ResourceName).Exists(r),
-				),
-				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectResourceAction(data.ResourceName, plancheck.ResourceActionNoop),
-					},
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config:            r.moveStateDirectoryRoleMemberSetup(data),
+			ExternalProviders: externalProvidersAzureAD(),
+			Check: resource.ComposeTestCheckFunc(
+				resource.TestCheckResourceAttrSet("azuread_directory_role_member.test", "id"),
+			),
+		},
+		{
+			Config:            r.moveStateDirectoryRoleMemberMoved(data),
+			ExternalProviders: externalProvidersAzureAD(),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+			),
+			ConfigPlanChecks: resource.ConfigPlanChecks{
+				PreApply: []plancheck.PlanCheck{
+					plancheck.ExpectResourceAction(data.ResourceName, plancheck.ResourceActionNoop),
 				},
 			},
 		},

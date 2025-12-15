@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
-
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -247,7 +245,7 @@ func (r *MSGraphResourceCollection) Read(ctx context.Context, req resource.ReadR
 		resp.Diagnostics.AddError("Failed to parse collection", err.Error())
 		return
 	}
-	model.ReferenceIds = referenceIds
+	model.ReferenceIds = ToListOfString(referenceIds)
 	model.Output = types.DynamicValue(buildOutputFromBody(body, model.ResponseExportValues))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
@@ -317,10 +315,10 @@ func (r *MSGraphResourceCollection) applyCollection(ctx context.Context, model *
 	return nil
 }
 
-func flattenReferenceIds(body interface{}) (types.List, error) {
+func flattenReferenceIds(body interface{}) ([]string, error) {
 	data, err := json.Marshal(body)
 	if err != nil {
-		return types.ListNull(types.StringType), err
+		return nil, err
 	}
 	type ListResponse struct {
 		Values []struct {
@@ -329,14 +327,14 @@ func flattenReferenceIds(body interface{}) (types.List, error) {
 	}
 	var listResp ListResponse
 	if err := json.Unmarshal(data, &listResp); err != nil {
-		return types.ListNull(types.StringType), err
+		return nil, err
 	}
 
-	result := make([]attr.Value, 0, len(listResp.Values))
+	result := make([]string, 0)
 	for _, v := range listResp.Values {
-		result = append(result, types.StringValue(v.ID))
+		result = append(result, v.ID)
 	}
-	return types.ListValueMust(types.StringType, result), nil
+	return result, nil
 }
 
 func baseCollectionUrl(url string) string { return strings.TrimSuffix(url, "/$ref") }

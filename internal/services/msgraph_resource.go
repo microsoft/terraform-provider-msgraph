@@ -360,6 +360,35 @@ func (r *MSGraphResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 	state := model
 	if strings.HasSuffix(model.Url.ValueString(), "/$ref") {
+		// Check if the resource exists in the collection
+		collectionUrl := baseCollectionUrl(model.Url.ValueString())
+		options := clients.RequestOptions{
+			QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
+			RetryOptions:    clients.NewRetryOptions(model.Retry),
+		}
+		referenceIds, err := r.client.ListRefIDs(ctx, collectionUrl, model.ApiVersion.ValueString(), options)
+		if err != nil {
+			if utils.ResponseErrorWasNotFound(err) {
+				tflog.Info(ctx, fmt.Sprintf("Collection %q not found - removing from state", collectionUrl))
+				resp.State.RemoveResource(ctx)
+				return
+			}
+			resp.Diagnostics.AddError("Failed to read collection", err.Error())
+			return
+		}
+		found := false
+		for _, refId := range referenceIds {
+			if refId == model.Id.ValueString() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			tflog.Info(ctx, fmt.Sprintf("Resource %q not found in collection %q - removing from state", model.Id.ValueString(), collectionUrl))
+			resp.State.RemoveResource(ctx)
+			return
+		}
+
 		if v, _ := req.Private.GetKey(ctx, FlagMoveState); v != nil && string(v) == "true" {
 			body := map[string]string{
 				"@odata.id": fmt.Sprintf("https://graph.microsoft.com/v1.0/directoryObjects/%s", model.Id.ValueString()),

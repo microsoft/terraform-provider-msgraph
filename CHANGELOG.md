@@ -12,6 +12,7 @@ DEPENDENCIES:
 - Updated `github.com/Azure/azure-sdk-for-go/sdk/azcore` from v1.16.0 to v1.19.1
 
 BUG FIXES:
+- Fixed an issue where `msgraph_resource` failed to track state for `$ref` resources (relationships), causing drift detection failures ([#68](https://github.com/microsoft/terraform-provider-msgraph/issues/68))
 - Fixed an issue where `@odata.type` property was missing in PATCH requests for resources that require it (e.g. Named Locations) ([#59](https://github.com/microsoft/terraform-provider-msgraph/issues/59))
 
 ## 0.2.0

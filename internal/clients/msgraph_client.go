@@ -2,6 +2,7 @@ package clients
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -76,6 +77,33 @@ func (client *MSGraphClient) Read(ctx context.Context, url string, apiVersion st
 	}
 
 	return responseBody, nil
+}
+
+func (client *MSGraphClient) ListRefIDs(ctx context.Context, url string, apiVersion string, options RequestOptions) ([]string, error) {
+	responseBody, err := client.List(ctx, url, apiVersion, options)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := json.Marshal(responseBody)
+	if err != nil {
+		return nil, err
+	}
+	type ListResponse struct {
+		Values []struct {
+			ID string `json:"id"`
+		} `json:"value"`
+	}
+	var listResp ListResponse
+	if err := json.Unmarshal(data, &listResp); err != nil {
+		return nil, err
+	}
+
+	result := make([]string, 0)
+	for _, v := range listResp.Values {
+		result = append(result, v.ID)
+	}
+	return result, nil
 }
 
 func (client *MSGraphClient) List(ctx context.Context, url string, apiVersion string, options RequestOptions) (interface{}, error) {

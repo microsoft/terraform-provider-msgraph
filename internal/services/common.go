@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/microsoft/terraform-provider-msgraph/internal/dynamic"
@@ -35,6 +36,14 @@ func AsMapOfLists(input types.Map) map[string][]string {
 		tflog.Warn(context.Background(), fmt.Sprintf("failed to convert input to map of lists: %s", diags))
 	}
 	return result
+}
+
+func ToListOfString(input []string) types.List {
+	result := make([]attr.Value, 0, len(input))
+	for _, v := range input {
+		result = append(result, types.StringValue(v))
+	}
+	return types.ListValueMust(types.StringType, result)
 }
 
 func unmarshalBody(input types.Dynamic, out interface{}) error {

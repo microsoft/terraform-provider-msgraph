@@ -80,7 +80,10 @@ func TestAcc_ResourceGroupMember(t *testing.T) {
 
 	r := MSGraphTestResource{}
 
-	importStep := data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, defaultIgnores()...)
+	// This API has a known issue where service principals are not listed as group members in v1.0. As a workaround,
+	// use this API on the beta endpoint or use the /groups/{id}?$expand=members API. For more information,
+	// see the related known issue: https://developer.microsoft.com/en-us/graph/known-issues/?search=25984
+	importStep := data.ImportStepWithImportStateIdFunc(r.ImportIdFuncWithBetaApiVersion, defaultIgnores()...)
 	importStep.ImportStateVerify = false
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
@@ -256,13 +259,25 @@ func (r MSGraphTestResource) Exists(ctx context.Context, client *clients.Client,
 	apiVersion := state.Attributes["api_version"]
 	url := state.Attributes["url"]
 
-	var checkUrl string
-	if !strings.Contains(url, "/$ref") {
-		checkUrl = fmt.Sprintf("%s/%s", url, state.ID)
-	} else {
-		checkUrl = url
+	if strings.Contains(url, "/$ref") {
+		collectionUrl := strings.TrimSuffix(url, "/$ref")
+		referenceIds, err := client.MSGraphClient.ListRefIDs(ctx, collectionUrl, "beta", clients.DefaultRequestOptions())
+
+		found := false
+		if err != nil {
+			return &found, nil
+		}
+		// Check if state.ID exists in the responseBody
+		for _, refId := range referenceIds {
+			if refId == state.ID {
+				found = true
+				break
+			}
+		}
+		return &found, nil
 	}
 
+	checkUrl := fmt.Sprintf("%s/%s", url, state.ID)
 	_, err := client.MSGraphClient.Read(ctx, checkUrl, apiVersion, clients.DefaultRequestOptions())
 	if err == nil {
 		b := true
@@ -273,6 +288,15 @@ func (r MSGraphTestResource) Exists(ctx context.Context, client *clients.Client,
 		return &b, nil
 	}
 	return nil, fmt.Errorf("checking for presence of existing %s(api_version=%s) resource: %w", state.ID, apiVersion, err)
+}
+
+func (r MSGraphTestResource) ImportIdFuncWithBetaApiVersion(tfState *terraform.State) (string, error) {
+	state := tfState.RootModule().Resources["msgraph_resource.test"].Primary
+	url := state.Attributes["url"]
+	if !strings.Contains(url, "/$ref") {
+		return fmt.Sprintf("%s/%s?api-version=beta", url, state.ID), nil
+	}
+	return strings.ReplaceAll(url, "/$ref", fmt.Sprintf("/%s/$ref", state.ID)) + "?api-version=beta", nil
 }
 
 func (r MSGraphTestResource) ImportIdFunc(tfState *terraform.State) (string, error) {
@@ -337,6 +361,7 @@ resource "msgraph_resource" "group" {
 
 resource "msgraph_resource" "test" {
   url = "groups/${msgraph_resource.group.id}/members/$ref"
+  api_version = "beta"
   body = {
     "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/${msgraph_resource.servicePrincipal_application.id}"
   }
