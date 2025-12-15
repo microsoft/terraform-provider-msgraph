@@ -127,6 +127,27 @@ func TestAcc_UpdateResource_GroupOwnerBind_UpdateDisplayName(t *testing.T) {
 	})
 }
 
+func TestAcc_UpdateResourceWithPutUpdateMethod(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_update_resource", "test")
+
+	r := MSGraphTestUpdateResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.updateMethod("Example Policy"),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+			),
+		},
+		{
+			Config: r.updateMethod("Updated Example Policy"),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+			),
+		},
+	})
+}
+
 func (r MSGraphTestUpdateResource) Exists(ctx context.Context, client *clients.Client, state *terraform.InstanceState) (*bool, error) {
 	apiVersion := state.Attributes["api_version"]
 	url := state.Attributes["url"]
@@ -306,4 +327,110 @@ resource "msgraph_update_resource" "test" {
   }
 }
 `, r.groupWithOwnerBase(), displayName)
+}
+
+func (r MSGraphTestUpdateResource) updateMethod(displayName string) string {
+	return fmt.Sprintf(`
+resource "msgraph_resource" "group_example" {
+  url = "groups"
+  body = {
+    displayName     = "group-name"
+    mailEnabled     = false
+    mailNickname    = "group-name"
+    securityEnabled = true
+  }
+}
+
+resource "msgraph_resource" "catalog_example" {
+  url = "identityGovernance/entitlementManagement/catalogs"
+  body = {
+    displayName = "example-catalog"
+    description = "Example catalog"
+  }
+}
+
+resource "msgraph_resource" "access_package_example" {
+  url         = "identityGovernance/entitlementManagement/accessPackages"
+  api_version = "beta"
+  body = {
+    catalogId   = msgraph_resource.catalog_example.id
+    displayName = "access-package"
+    description = "Access Package"
+  }
+}
+
+resource "msgraph_resource" "access_package_assignment_policy" {
+  url           = "identityGovernance/entitlementManagement/accessPackageAssignmentPolicies"
+  api_version   = "beta"
+  update_method = "PUT"
+  body = {
+    accessPackageId = msgraph_resource.access_package_example.id
+    displayName     = "init displayname"
+    description     = "My assignment"
+    expiration = {
+      type     = "afterDuration"
+      duration = "P90D"
+    }
+    requestorSettings = {
+      scopeType = "AllExistingDirectoryMemberUsers"
+    }
+    requestApprovalSettings = {
+      isApprovalRequired = true
+      approvalStages = [
+        {
+          approvalStageTimeOutInDays = 14
+          primaryApprovers = [
+            {
+              "@odata.type" = "#microsoft.graph.groupMembers"
+              groupId       = msgraph_resource.group_example.id
+              description   = "group-name"
+            }
+          ]
+        }
+      ]
+    }
+    reviewSettings = {
+      isEnabled          = true
+      expirationBehavior = "keepAccess"
+      isSelfReview       = true
+      schedule = {
+        startDateTime = "2025-12-12T00:00:00Z"
+        recurrence = {
+          pattern = {
+            type     = "weekly"
+            interval = 1
+          }
+          range = {
+            type      = "noEnd"
+            startDate = "2025-12-12"
+          }
+        }
+      }
+    }
+    questions = [
+      {
+        "@odata.type" = "#microsoft.graph.accessPackageTextInputQuestion"
+        text = {
+          defaultText = "hello, how are you?"
+        }
+        isRequired = false
+      }
+    ]
+  }
+
+  lifecycle {
+    ignore_changes = [body.displayName, body.description]
+  }
+}
+
+resource "msgraph_update_resource" "test" {
+  url           = "identityGovernance/entitlementManagement/accessPackageAssignmentPolicies/${msgraph_resource.access_package_assignment_policy.id}"
+  api_version   = "beta"
+  update_method = "PUT"
+  body = {
+    displayName = "%[1]s"
+    description = "My assignment %[1]s"
+  }
+}
+`, displayName)
 }

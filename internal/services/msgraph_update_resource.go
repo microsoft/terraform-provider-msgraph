@@ -49,6 +49,7 @@ func (r *MSGraphUpdateResource) ConfigValidators(ctx context.Context) []resource
 // MSGraphUpdateResourceModel describes the resource data model.
 type MSGraphUpdateResourceModel struct {
 	Id                    types.String      `tfsdk:"id"`
+	UpdateMethod          types.String      `tfsdk:"update_method"`
 	ApiVersion            types.String      `tfsdk:"api_version"`
 	Url                   types.String      `tfsdk:"url"`
 	Body                  types.Dynamic     `tfsdk:"body"`
@@ -93,6 +94,14 @@ func (r *MSGraphUpdateResource) Schema(ctx context.Context, req resource.SchemaR
 					stringvalidator.OneOf("v1.0", "beta"),
 				},
 				Default: stringdefault.StaticString("v1.0"),
+			},
+
+			"update_method": schema.StringAttribute{
+				MarkdownDescription: "The HTTP method to use for updating the resource. Can be `PATCH` or `PUT`. Defaults to `PATCH`.",
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("PATCH", "PUT"),
+				},
 			},
 
 			"body": schema.DynamicAttribute{
@@ -201,7 +210,26 @@ func (r *MSGraphUpdateResource) CreateUpdate(ctx context.Context, plan tfsdk.Pla
 		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.UpdateQueryParameters)),
 		RetryOptions:    clients.NewRetryOptions(model.Retry),
 	}
-	_, err = r.client.Update(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), requestBody, options)
+
+	updateMethod := "PATCH"
+	if !model.UpdateMethod.IsNull() && model.UpdateMethod.ValueString() != "" {
+		updateMethod = model.UpdateMethod.ValueString()
+	}
+	if updateMethod == "PUT" {
+		readOptions := clients.RequestOptions{
+			QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
+			RetryOptions:    clients.NewRetryOptions(model.Retry),
+		}
+		existingBody, err := r.client.Read(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), readOptions)
+		if err != nil {
+			diagnostics.AddError("Failed to read existing resource for PUT update", err.Error())
+			return
+		}
+
+		requestBody = utils.MergeObject(existingBody, requestBody)
+	}
+
+	_, err = r.client.Action(ctx, updateMethod, model.Url.ValueString(), model.ApiVersion.ValueString(), requestBody, options)
 	if err != nil {
 		diagnostics.AddError("Failed to create resource", err.Error())
 		return
