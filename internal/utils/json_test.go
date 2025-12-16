@@ -295,33 +295,26 @@ func TestDiffObject(t *testing.T) {
 				"name": "changed",
 			},
 		},
+		{
+			name: "array changed to empty -> empty array returned (issue #58)",
+			old:  []interface{}{1, 2, 3},
+			newV: []interface{}{},
+			opt:  UpdateJsonOption{},
+			want: []interface{}{},
+		},
+		{
+			name: "nested array changed to empty -> parent map with empty array returned (issue #58)",
+			old:  map[string]interface{}{"a": []interface{}{1}},
+			newV: map[string]interface{}{"a": []interface{}{}},
+			opt:  UpdateJsonOption{},
+			want: map[string]interface{}{"a": []interface{}{}},
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := DiffObject(tc.old, tc.newV, tc.opt)
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Fatalf("DiffObject() = %#v, want %#v", got, tc.want)
-			}
-		})
-	}
-}
-
-func TestIsEmptyObject(t *testing.T) {
-	testcases := []struct {
-		name string
-		v    interface{}
-		want bool
-	}{
-		{name: "nil", v: nil, want: true},
-		{name: "empty map", v: map[string]interface{}{}, want: true},
-		{name: "empty slice", v: []interface{}{}, want: true},
-		{name: "scalar", v: "x", want: false},
-	}
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := IsEmptyObject(tc.v)
-			if got != tc.want {
-				t.Fatalf("IsEmptyObject() = %v, want %v (input=%#v)", got, tc.want, tc.v)
 			}
 		})
 	}

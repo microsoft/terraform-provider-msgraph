@@ -342,7 +342,7 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 		patchBody := utils.DiffObject(previousBody, requestBody, diffOption)
 
 		// If there's something to update, send PATCH
-		if !utils.IsEmptyObject(patchBody) {
+		if patchBody != nil {
 			_, err := r.client.Update(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), patchBody, options)
 			if err != nil {
 				resp.Diagnostics.AddError("Failed to create resource", err.Error())

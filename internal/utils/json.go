@@ -221,7 +221,7 @@ func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) inter
 			// include keys present in new
 			for key, newVal := range newMap {
 				if oldVal, ok := oldValue[key]; ok {
-					if d := DiffObject(oldVal, newVal, option); !IsEmptyObject(d) {
+					if d := DiffObject(oldVal, newVal, option); d != nil {
 						res[key] = d
 					}
 				} else {
@@ -268,18 +268,4 @@ func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) inter
 	}
 	// primitives or differing types -> return new
 	return new
-}
-
-// IsEmptyObject returns true if the input should be considered an empty patch
-func IsEmptyObject(v interface{}) bool {
-	if v == nil {
-		return true
-	}
-	switch t := v.(type) {
-	case map[string]interface{}:
-		return len(t) == 0
-	case []interface{}:
-		return len(t) == 0
-	}
-	return false
 }

@@ -278,6 +278,29 @@ func TestAcc_ResourceImport_InvalidIDFormat(t *testing.T) {
 	})
 }
 
+func TestAcc_ResourceApplicationRemovesPasswordCredentials(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.applicationWithPasswordCredentials(true),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+		},
+		{
+			Config: r.applicationWithPasswordCredentials(false),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+		},
+	})
+}
+
 func (r MSGraphTestResource) Exists(ctx context.Context, client *clients.Client, state *terraform.InstanceState) (*bool, error) {
 	apiVersion := state.Attributes["api_version"]
 	url := state.Attributes["url"]
@@ -600,4 +623,27 @@ resource "msgraph_resource" "test" {
   }
 }
 `, displayName)
+}
+
+func (r MSGraphTestResource) applicationWithPasswordCredentials(enabled bool) string {
+	passwordCredential := ""
+	if enabled {
+		passwordCredential = `
+	  {
+		displayName = "first credential"
+	  }`
+	}
+
+	return fmt.Sprintf(`
+resource "msgraph_resource" "test" {
+  url = "applications"
+
+  body = {
+    displayName = "My Application"
+    passwordCredentials = [
+      %s
+    ]
+  }
+}
+`, passwordCredential)
 }
