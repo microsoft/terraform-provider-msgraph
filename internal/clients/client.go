@@ -27,6 +27,7 @@ type Option struct {
 	CloudCfg                    cloud.Configuration
 	CustomCorrelationRequestID  string
 	TenantId                    string
+	MSGraphEndpoint             string
 }
 
 func (client *Client) Build(ctx context.Context, o *Option) error {
@@ -86,7 +87,7 @@ func (client *Client) Build(ctx context.Context, o *Option) error {
 		"$format",
 	}
 
-	msgraphClient, err := NewMSGraphClient(o.Cred, &policy.ClientOptions{
+	msgraphClient, err := NewMSGraphClient(o.MSGraphEndpoint, o.Cred, &policy.ClientOptions{
 		Logging: policy.LogOptions{
 			IncludeBody:        false,
 			AllowedHeaders:     allowedHeaders,

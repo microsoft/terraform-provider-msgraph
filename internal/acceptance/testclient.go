@@ -116,10 +116,16 @@ func BuildTestClient() (*clients.Client, error) {
 			return nil, fmt.Errorf("failed to obtain a credential: %v", err)
 		}
 
+		msgraphEndpoint := os.Getenv("ARM_MSGRAPH_ENDPOINT")
+		if msgraphEndpoint == "" {
+			msgraphEndpoint = clients.DefaultMSGraphEndpoint
+		}
+
 		copt := &clients.Option{
-			Cred:     cred,
-			CloudCfg: cloudConfig,
-			TenantId: os.Getenv("ARM_TENANT_ID"),
+			Cred:            cred,
+			CloudCfg:        cloudConfig,
+			TenantId:        os.Getenv("ARM_TENANT_ID"),
+			MSGraphEndpoint: msgraphEndpoint,
 		}
 
 		client := &clients.Client{}

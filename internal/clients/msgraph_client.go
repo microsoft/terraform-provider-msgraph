@@ -16,24 +16,34 @@ const (
 	nextLinkKey   = "@odata.nextLink"
 )
 
+const DefaultMSGraphEndpoint = "https://graph.microsoft.com"
+
 type MSGraphClient struct {
 	host string
 	pl   runtime.Pipeline
 }
 
-func NewMSGraphClient(credential azcore.TokenCredential, opt *policy.ClientOptions) (*MSGraphClient, error) {
+// Host returns the Microsoft Graph endpoint base URL (e.g. "https://graph.microsoft.com").
+func (client *MSGraphClient) Host() string {
+	return client.host
+}
+
+func NewMSGraphClient(endpoint string, credential azcore.TokenCredential, opt *policy.ClientOptions) (*MSGraphClient, error) {
+	if endpoint == "" {
+		endpoint = DefaultMSGraphEndpoint
+	}
 	pl := runtime.NewPipeline(moduleName, moduleVersion, runtime.PipelineOptions{
 		AllowedHeaders:         nil,
 		AllowedQueryParameters: nil,
 		APIVersion:             runtime.APIVersionOptions{},
 		PerCall:                nil,
 		PerRetry: []policy.Policy{
-			runtime.NewBearerTokenPolicy(credential, []string{"https://graph.microsoft.com/.default"}, nil),
+			runtime.NewBearerTokenPolicy(credential, []string{endpoint + "/.default"}, nil),
 		},
 		Tracing: runtime.TracingOptions{},
 	}, opt)
 	return &MSGraphClient{
-		host: "https://graph.microsoft.com",
+		host: endpoint,
 		pl:   pl,
 	}, nil
 }

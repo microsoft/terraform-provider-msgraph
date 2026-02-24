@@ -47,6 +47,7 @@ type MSGraphProviderModel struct {
 	UsePowerShell                types.Bool   `tfsdk:"use_powershell"`
 	UseMSI                       types.Bool   `tfsdk:"use_msi"`
 	UseAKSWorkloadIdentity       types.Bool   `tfsdk:"use_aks_workload_identity"`
+	MSGraphEndpoint              types.String `tfsdk:"msgraph_endpoint"`
 	PartnerID                    types.String `tfsdk:"partner_id"`
 	CustomCorrelationRequestID   types.String `tfsdk:"custom_correlation_request_id"`
 	DisableCorrelationRequestID  types.Bool   `tfsdk:"disable_correlation_request_id"`
@@ -225,6 +226,12 @@ func (p *MSGraphProvider) Schema(ctx context.Context, req provider.SchemaRequest
 			"use_aks_workload_identity": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Should AKS Workload Identity be used for Authentication? This can also be sourced from the `ARM_USE_AKS_WORKLOAD_IDENTITY` Environment Variable. Defaults to `false`. When set, `client_id`, `tenant_id` and `oidc_token_file_path` will be detected from the environment and do not need to be specified.",
+			},
+
+			// Microsoft Graph endpoint
+			"msgraph_endpoint": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "The Microsoft Graph endpoint to use, including the scheme. This can also be sourced from the `ARM_MSGRAPH_ENDPOINT` environment variable. Defaults to `https://graph.microsoft.com`.",
 			},
 
 			// Managed Tracking GUID for User-agent
@@ -418,6 +425,14 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 		}
 	}
 
+	if model.MSGraphEndpoint.IsNull() {
+		if v := os.Getenv("ARM_MSGRAPH_ENDPOINT"); v != "" {
+			model.MSGraphEndpoint = types.StringValue(v)
+		} else {
+			model.MSGraphEndpoint = types.StringValue("https://graph.microsoft.com")
+		}
+	}
+
 	option := azidentity.DefaultAzureCredentialOptions{
 		TenantID: model.TenantID.ValueString(),
 	}
@@ -435,6 +450,7 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 		CustomCorrelationRequestID:  model.CustomCorrelationRequestID.ValueString(),
 		CloudCfg:                    cloud.Configuration{},
 		TenantId:                    model.TenantID.ValueString(),
+		MSGraphEndpoint:             model.MSGraphEndpoint.ValueString(),
 	}
 	client := &clients.Client{}
 	if err = client.Build(ctx, copt); err != nil {
