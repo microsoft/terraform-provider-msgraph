@@ -26,6 +26,13 @@ import (
 
 var _ provider.Provider = &MSGraphProvider{}
 
+var validMSGraphEndpoints = []string{
+	"https://graph.microsoft.com",
+	"https://graph.microsoft.us",
+	"https://dod-graph.microsoft.us",
+	"https://microsoftgraph.chinacloudapi.cn",
+}
+
 type MSGraphProvider struct{}
 
 type MSGraphProviderModel struct {
@@ -230,8 +237,11 @@ func (p *MSGraphProvider) Schema(ctx context.Context, req provider.SchemaRequest
 
 			// Microsoft Graph endpoint
 			"msgraph_endpoint": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The Microsoft Graph endpoint to use, including the scheme. This can also be sourced from the `ARM_MSGRAPH_ENDPOINT` environment variable. Defaults to `https://graph.microsoft.com`.",
+				Optional: true,
+				Validators: []validator.String{
+					stringvalidator.OneOf(validMSGraphEndpoints...),
+				},
+				MarkdownDescription: "The Microsoft Graph endpoint to use, including the scheme. This can also be sourced from the `ARM_MSGRAPH_ENDPOINT` environment variable. Defaults to `https://graph.microsoft.com`. Valid values are `https://graph.microsoft.com` (global), `https://graph.microsoft.us` (US Government L4), `https://dod-graph.microsoft.us` (US Government L5/DOD), and `https://microsoftgraph.chinacloudapi.cn` (China).",
 			},
 
 			// Managed Tracking GUID for User-agent
@@ -427,6 +437,18 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	if model.MSGraphEndpoint.IsNull() {
 		if v := os.Getenv("ARM_MSGRAPH_ENDPOINT"); v != "" {
+			valid := false
+			for _, endpoint := range validMSGraphEndpoints {
+				if v == endpoint {
+					valid = true
+					break
+				}
+			}
+			if !valid {
+				resp.Diagnostics.AddError("Invalid `msgraph_endpoint` value",
+					fmt.Sprintf("The value %q provided via ARM_MSGRAPH_ENDPOINT is not a valid Microsoft Graph endpoint. Valid values are: https://graph.microsoft.com, https://graph.microsoft.us, https://dod-graph.microsoft.us, https://microsoftgraph.chinacloudapi.cn", v))
+				return
+			}
 			model.MSGraphEndpoint = types.StringValue(v)
 		} else {
 			model.MSGraphEndpoint = types.StringValue("https://graph.microsoft.com")
