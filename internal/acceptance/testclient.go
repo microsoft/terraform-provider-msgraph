@@ -26,15 +26,23 @@ func BuildTestClient() (*clients.Client, error) {
 	if _client == nil {
 		var cloudConfig cloud.Configuration
 		env := os.Getenv("ARM_ENVIRONMENT")
+		var environment string
 		switch strings.ToLower(env) {
-		case "public":
+		case "public", "global", "":
 			cloudConfig = cloud.AzurePublic
-		case "usgovernment":
+			environment = "global"
+		case "usgovernment", "usgovernmentl4":
 			cloudConfig = cloud.AzureGovernment
+			environment = "usgovernmentl4"
+		case "usgovernmentl5", "dod":
+			cloudConfig = cloud.AzureGovernment
+			environment = "usgovernmentl5"
 		case "china":
 			cloudConfig = cloud.AzureChina
+			environment = "china"
 		default:
 			cloudConfig = cloud.AzurePublic
+			environment = "global"
 		}
 
 		model := provider.MSGraphProviderModel{}
@@ -116,16 +124,11 @@ func BuildTestClient() (*clients.Client, error) {
 			return nil, fmt.Errorf("failed to obtain a credential: %v", err)
 		}
 
-		msgraphEndpoint := os.Getenv("ARM_MSGRAPH_ENDPOINT")
-		if msgraphEndpoint == "" {
-			msgraphEndpoint = clients.DefaultMSGraphEndpoint
-		}
-
 		copt := &clients.Option{
-			Cred:            cred,
-			CloudCfg:        cloudConfig,
-			TenantId:        os.Getenv("ARM_TENANT_ID"),
-			MSGraphEndpoint: msgraphEndpoint,
+			Cred:        cred,
+			CloudCfg:    cloudConfig,
+			TenantId:    os.Getenv("ARM_TENANT_ID"),
+			Environment: environment,
 		}
 
 		client := &clients.Client{}

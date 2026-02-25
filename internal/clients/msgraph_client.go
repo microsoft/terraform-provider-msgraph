@@ -16,7 +16,26 @@ const (
 	nextLinkKey   = "@odata.nextLink"
 )
 
-const DefaultMSGraphEndpoint = "https://graph.microsoft.com"
+const DefaultEnvironment = "global"
+
+// EnvironmentEndpoints maps environment names to their Microsoft Graph endpoint URLs.
+var EnvironmentEndpoints = map[string]string{
+	"global":          "https://graph.microsoft.com",
+	"public":          "https://graph.microsoft.com",
+	"usgovernmentl4":  "https://graph.microsoft.us",
+	"usgovernment":    "https://graph.microsoft.us",
+	"usgovernmentl5":  "https://dod-graph.microsoft.us",
+	"dod":             "https://dod-graph.microsoft.us",
+	"china":           "https://microsoftgraph.chinacloudapi.cn",
+}
+
+// MSGraphEndpointForEnvironment returns the Microsoft Graph endpoint URL for the given environment name.
+func MSGraphEndpointForEnvironment(env string) string {
+	if endpoint, ok := EnvironmentEndpoints[env]; ok {
+		return endpoint
+	}
+	return EnvironmentEndpoints[DefaultEnvironment]
+}
 
 type MSGraphClient struct {
 	host string
@@ -30,7 +49,7 @@ func (client *MSGraphClient) Host() string {
 
 func NewMSGraphClient(endpoint string, credential azcore.TokenCredential, opt *policy.ClientOptions) (*MSGraphClient, error) {
 	if endpoint == "" {
-		endpoint = DefaultMSGraphEndpoint
+		endpoint = EnvironmentEndpoints[DefaultEnvironment]
 	}
 	pl := runtime.NewPipeline(moduleName, moduleVersion, runtime.PipelineOptions{
 		AllowedHeaders:         nil,

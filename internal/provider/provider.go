@@ -26,11 +26,14 @@ import (
 
 var _ provider.Provider = &MSGraphProvider{}
 
-var validMSGraphEndpoints = []string{
-	"https://graph.microsoft.com",
-	"https://graph.microsoft.us",
-	"https://dod-graph.microsoft.us",
-	"https://microsoftgraph.chinacloudapi.cn",
+var validEnvironments = []string{
+	"global",
+	"public",
+	"usgovernmentl4",
+	"usgovernment",
+	"usgovernmentl5",
+	"dod",
+	"china",
 }
 
 type MSGraphProvider struct{}
@@ -54,7 +57,7 @@ type MSGraphProviderModel struct {
 	UsePowerShell                types.Bool   `tfsdk:"use_powershell"`
 	UseMSI                       types.Bool   `tfsdk:"use_msi"`
 	UseAKSWorkloadIdentity       types.Bool   `tfsdk:"use_aks_workload_identity"`
-	MSGraphEndpoint              types.String `tfsdk:"msgraph_endpoint"`
+	Environment                  types.String `tfsdk:"environment"`
 	PartnerID                    types.String `tfsdk:"partner_id"`
 	CustomCorrelationRequestID   types.String `tfsdk:"custom_correlation_request_id"`
 	DisableCorrelationRequestID  types.Bool   `tfsdk:"disable_correlation_request_id"`
@@ -235,13 +238,13 @@ func (p *MSGraphProvider) Schema(ctx context.Context, req provider.SchemaRequest
 				MarkdownDescription: "Should AKS Workload Identity be used for Authentication? This can also be sourced from the `ARM_USE_AKS_WORKLOAD_IDENTITY` Environment Variable. Defaults to `false`. When set, `client_id`, `tenant_id` and `oidc_token_file_path` will be detected from the environment and do not need to be specified.",
 			},
 
-			// Microsoft Graph endpoint
-			"msgraph_endpoint": schema.StringAttribute{
+			// Cloud environment
+			"environment": schema.StringAttribute{
 				Optional: true,
 				Validators: []validator.String{
-					stringvalidator.OneOf(validMSGraphEndpoints...),
+					stringvalidator.OneOf(validEnvironments...),
 				},
-				MarkdownDescription: "The Microsoft Graph endpoint to use, including the scheme. This can also be sourced from the `ARM_MSGRAPH_ENDPOINT` environment variable. Defaults to `https://graph.microsoft.com`. Valid values are `https://graph.microsoft.com` (global), `https://graph.microsoft.us` (US Government L4), `https://dod-graph.microsoft.us` (US Government L5/DOD), and `https://microsoftgraph.chinacloudapi.cn` (China).",
+				MarkdownDescription: "The cloud environment which should be used. Possible values are: `global` (also `public`), `usgovernmentl4` (also `usgovernment`), `usgovernmentl5` (also `dod`), and `china`. Defaults to `global`. This can also be sourced from the `ARM_ENVIRONMENT` environment variable.",
 			},
 
 			// Managed Tracking GUID for User-agent
@@ -435,23 +438,24 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 		}
 	}
 
-	if model.MSGraphEndpoint.IsNull() {
-		if v := os.Getenv("ARM_MSGRAPH_ENDPOINT"); v != "" {
+	if model.Environment.IsNull() {
+		if v := os.Getenv("ARM_ENVIRONMENT"); v != "" {
+			v = strings.ToLower(v)
 			valid := false
-			for _, endpoint := range validMSGraphEndpoints {
-				if v == endpoint {
+			for _, env := range validEnvironments {
+				if v == env {
 					valid = true
 					break
 				}
 			}
 			if !valid {
-				resp.Diagnostics.AddError("Invalid `msgraph_endpoint` value",
-					fmt.Sprintf("The value %q provided via ARM_MSGRAPH_ENDPOINT is not a valid Microsoft Graph endpoint. Valid values are: https://graph.microsoft.com, https://graph.microsoft.us, https://dod-graph.microsoft.us, https://microsoftgraph.chinacloudapi.cn", v))
+				resp.Diagnostics.AddError("Invalid `environment` value",
+					fmt.Sprintf("The value %q provided via ARM_ENVIRONMENT is not a valid environment. Valid values are: global (also public), usgovernmentl4 (also usgovernment), usgovernmentl5 (also dod), china", v))
 				return
 			}
-			model.MSGraphEndpoint = types.StringValue(v)
+			model.Environment = types.StringValue(v)
 		} else {
-			model.MSGraphEndpoint = types.StringValue("https://graph.microsoft.com")
+			model.Environment = types.StringValue(clients.DefaultEnvironment)
 		}
 	}
 
@@ -472,7 +476,7 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 		CustomCorrelationRequestID:  model.CustomCorrelationRequestID.ValueString(),
 		CloudCfg:                    cloud.Configuration{},
 		TenantId:                    model.TenantID.ValueString(),
-		MSGraphEndpoint:             model.MSGraphEndpoint.ValueString(),
+		Environment:                 model.Environment.ValueString(),
 	}
 	client := &clients.Client{}
 	if err = client.Build(ctx, copt); err != nil {
