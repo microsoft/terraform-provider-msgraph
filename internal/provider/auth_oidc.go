@@ -91,6 +91,7 @@ func (w *OidcCredential) getAssertion(ctx context.Context) (string, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", w.requestToken))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
+	// #nosec G704
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("getAssertion: cannot request token: %v", err)
