@@ -30,6 +30,7 @@ func TestAcc_ResourceCollectionBasic(t *testing.T) {
 				resource.TestCheckResourceAttr(data.ResourceName, "reference_ids.#", "1"),
 			),
 		},
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc),
 	})
 }
 
@@ -46,6 +47,7 @@ func TestAcc_ResourceCollectionUpdate(t *testing.T) {
 				resource.TestCheckResourceAttr(data.ResourceName, "reference_ids.#", "1"),
 			),
 		},
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc),
 		{
 			// add second member
 			Config: r.updateTwoMembers(),
@@ -54,6 +56,7 @@ func TestAcc_ResourceCollectionUpdate(t *testing.T) {
 				resource.TestCheckResourceAttr(data.ResourceName, "reference_ids.#", "2"),
 			),
 		},
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, "reference_ids.#", "reference_ids.0", "reference_ids.1"),
 		{
 			// remove second member again
 			Config: r.updateOneMember(),
@@ -62,6 +65,38 @@ func TestAcc_ResourceCollectionUpdate(t *testing.T) {
 				resource.TestCheckResourceAttr(data.ResourceName, "reference_ids.#", "1"),
 			),
 		},
+	})
+}
+
+func TestAcc_ResourceCollectionImport(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource_collection", "test")
+	r := MSGraphTestResourceCollection{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.basic(),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				resource.TestCheckResourceAttr(data.ResourceName, "reference_ids.#", "1"),
+			),
+		},
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc),
+	})
+}
+
+func TestAcc_ResourceCollectionImportWithApiVersion(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource_collection", "test")
+	r := MSGraphTestResourceCollection{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.basic(),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				resource.TestCheckResourceAttr(data.ResourceName, "reference_ids.#", "1"),
+			),
+		},
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFuncWithBetaApiVersion),
 	})
 }
 
@@ -154,6 +189,21 @@ func (r MSGraphTestResourceCollection) Exists(ctx context.Context, client *clien
 		return &b, nil
 	}
 	return nil, fmt.Errorf("checking for presence of existing collection %s(api_version=%s): %w", id, apiVersion, err)
+}
+
+func (r MSGraphTestResourceCollection) ImportIdFunc(tfState *terraform.State) (string, error) {
+	state := tfState.RootModule().Resources["msgraph_resource_collection.test"].Primary
+	url := state.Attributes["url"]
+	apiVersion := state.Attributes["api_version"]
+	if apiVersion != "" && apiVersion != "v1.0" {
+		return url + "?api-version=" + apiVersion, nil
+	}
+	return url, nil
+}
+
+func (r MSGraphTestResourceCollection) ImportIdFuncWithBetaApiVersion(tfState *terraform.State) (string, error) {
+	state := tfState.RootModule().Resources["msgraph_resource_collection.test"].Primary
+	return state.Attributes["url"] + "?api-version=beta", nil
 }
 
 // configuration helpers

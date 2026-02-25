@@ -1,4 +1,9 @@
-## 0.3.0 (Unreleased)
+## 0.4.0 (Unreleased)
+
+ENHANCEMENTS:
+- `msgraph_resource_collection`: Support resource import for collection resources (e.g. groups/{id}/members/$ref) to allow importing existing relationships into Terraform state.
+
+## 0.3.0
 
 FEATURES:
 - **New Authentication Method**: Azure PowerShell authentication support via `use_powershell` provider attribute

@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -27,9 +29,10 @@ import (
 )
 
 var (
-	_ resource.Resource               = &MSGraphResourceCollection{}
-	_ resource.ResourceWithConfigure  = &MSGraphResourceCollection{}
-	_ resource.ResourceWithModifyPlan = &MSGraphResourceCollection{}
+	_ resource.Resource                = &MSGraphResourceCollection{}
+	_ resource.ResourceWithConfigure   = &MSGraphResourceCollection{}
+	_ resource.ResourceWithModifyPlan  = &MSGraphResourceCollection{}
+	_ resource.ResourceWithImportState = &MSGraphResourceCollection{}
 )
 
 func NewMSGraphResourceCollection() resource.Resource {
@@ -335,6 +338,47 @@ func flattenReferenceIds(body interface{}) ([]string, error) {
 		result = append(result, v.ID)
 	}
 	return result, nil
+}
+
+func (r *MSGraphResourceCollection) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	parsedUrl, err := url.Parse(req.ID)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to parse URL", err.Error())
+		return
+	}
+
+	urlValue := strings.TrimPrefix(parsedUrl.Path, "/")
+
+	if !strings.HasSuffix(urlValue, "/$ref") {
+		resp.Diagnostics.AddError(
+			"Invalid Import ID",
+			fmt.Sprintf("The import ID must be a collection URL ending with '/$ref'. For example: 'groups/{group-id}/members/$ref'. Got: %s", req.ID),
+		)
+		return
+	}
+
+	apiVersion := "v1.0"
+	if parsedUrl.Query().Get("api-version") != "" {
+		apiVersion = parsedUrl.Query().Get("api-version")
+	}
+
+	model := &MSGraphResourceCollectionModel{
+		Id:                  types.StringValue(baseCollectionUrl(urlValue)),
+		Url:                 types.StringValue(urlValue),
+		ApiVersion:          types.StringValue(apiVersion),
+		ReferenceIds:        types.ListNull(types.StringType),
+		ReadQueryParameters: types.MapNull(types.ListType{ElemType: types.StringType}),
+		Retry:               retry.NewValueNull(),
+		Timeouts: timeouts.Value{
+			Object: types.ObjectNull(map[string]attr.Type{
+				"create": types.StringType,
+				"update": types.StringType,
+				"read":   types.StringType,
+				"delete": types.StringType,
+			}),
+		},
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
 func baseCollectionUrl(url string) string { return strings.TrimSuffix(url, "/$ref") }

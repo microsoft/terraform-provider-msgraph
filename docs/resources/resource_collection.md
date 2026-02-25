@@ -141,4 +141,12 @@ Optional:
 - `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
+## Import
 
+ ```shell
+ # MSGraph resource collection can be imported using the collection $ref URL, e.g.
+ terraform import msgraph_resource_collection.group_members groups/00000000-0000-0000-0000-000000000000/members/$ref
+ 
+ # To import using the beta API version, append the api-version query parameter:
+ terraform import msgraph_resource_collection.group_members 'groups/00000000-0000-0000-0000-000000000000/members/$ref?api-version=beta'
+ ```
