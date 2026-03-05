@@ -276,23 +276,22 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 		model.ResourceUrl = types.StringValue(fmt.Sprintf("%s/%s", model.Url.ValueString(), responseId))
 	}
 
-	// Wait for the resource to be available
-	if err = consistency.WaitForUpdate(ctx, ResourceExistenceFunc(r.client, model)); err != nil {
-		resp.Diagnostics.AddError("Error", fmt.Sprintf("waiting for creation of %s: %v", model.Url.ValueString(), err))
-		return
-	}
-
 	if !isRelationship {
+		// Poll the collection endpoint until the item appears. Concurrent creates share a single
+		// GET /collection via the list cache instead of each making an individual GET request.
 		options = clients.RequestOptions{
 			QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
-			RetryOptions: clients.CombineRetryOptions(
-				clients.NewRetryOptionsForReadAfterCreate(),
-				clients.NewRetryOptions(model.Retry),
-			),
+			RetryOptions:    clients.NewRetryOptions(model.Retry),
 		}
-		responseBody, err = r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
+		responseBody, err = r.client.ReadFromListWithWait(ctx, model.Url.ValueString(), model.Id.ValueString(), model.ApiVersion.ValueString(), options)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to read data source", err.Error())
+			return
+		}
+	} else {
+		// For $ref relationships, wait for the reference to appear using the existing mechanism.
+		if err = consistency.WaitForUpdate(ctx, ResourceExistenceFunc(r.client, model)); err != nil {
+			resp.Diagnostics.AddError("Error", fmt.Sprintf("waiting for creation of %s: %v", model.Url.ValueString(), err))
 			return
 		}
 	}
@@ -366,17 +365,13 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 	}
 
-	// Wait for the resource to be available
-	if err := consistency.WaitForUpdate(ctx, ResourceExistenceFunc(r.client, model)); err != nil {
-		resp.Diagnostics.AddError("Error", fmt.Sprintf("waiting for creation of %s: %v", model.Url.ValueString(), err))
-		return
-	}
-
+	// The item existed before the PATCH/PUT and the write already invalidated the cache.
+	// A single ReadFromList fetches a fresh collection and finds the item — no polling loop.
 	options = clients.RequestOptions{
 		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
 		RetryOptions:    clients.NewRetryOptions(model.Retry),
 	}
-	responseBody, err := r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
+	responseBody, err := r.client.ReadFromList(ctx, model.Url.ValueString(), model.Id.ValueString(), model.ApiVersion.ValueString(), options)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to read data source", err.Error())
 		return
@@ -457,7 +452,7 @@ func (r *MSGraphResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 
 	options := clients.NewRequestOptions(nil, AsMapOfLists(model.ReadQueryParameters))
-	responseBody, err := r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
+	responseBody, err := r.client.ReadFromList(ctx, model.Url.ValueString(), model.Id.ValueString(), model.ApiVersion.ValueString(), options)
 	if err != nil {
 		if utils.ResponseErrorWasNotFound(err) {
 			tflog.Info(ctx, fmt.Sprintf("Error reading %q - removing from state", model.Id.ValueString()))
@@ -540,13 +535,9 @@ func (r *MSGraphResource) Delete(ctx context.Context, req resource.DeleteRequest
 	err := r.client.Delete(ctx, itemUrl, model.ApiVersion.ValueString(), options)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to delete resource", err.Error())
-		return
 	}
-
-	// Wait for deletion to complete
-	if err = consistency.WaitForDeletion(ctx, ResourceExistenceFunc(r.client, model)); err != nil {
-		resp.Diagnostics.AddError("Error waiting for deletion", err.Error())
-	}
+	// No WaitForDeletion: a successful DELETE response is sufficient. Polling until
+	// Graph's eventual consistency propagates the deletion only wastes time and API quota.
 }
 
 func ResourceExistenceFunc(client *clients.MSGraphClient, model *MSGraphResourceModel) consistency.ChangeFunc {
@@ -590,8 +581,7 @@ func ResourceExistenceFunc(client *clients.MSGraphClient, model *MSGraphResource
 		options := clients.RequestOptions{
 			QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
 		}
-		itemUrl := fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString())
-		_, err := client.Read(ctx, itemUrl, model.ApiVersion.ValueString(), options)
+		_, err := client.ReadFromList(ctx, model.Url.ValueString(), model.Id.ValueString(), model.ApiVersion.ValueString(), options)
 		if err != nil {
 			if utils.ResponseErrorWasNotFound(err) {
 				b := false
@@ -644,14 +634,11 @@ func (r *MSGraphResource) ImportState(ctx context.Context, req resource.ImportSt
 		urlValue = strings.TrimPrefix(parsedUrl.Path[0:lastIndex], "/")
 	}
 
-	// Construct the resource_url based on the URL pattern
 	var resourceUrl string
 	if strings.HasSuffix(urlValue, "/$ref") {
-		// For $ref URLs, resource_url should be the collection URL without $ref + the ID
 		baseUrl := strings.TrimSuffix(urlValue, "/$ref")
 		resourceUrl = fmt.Sprintf("%s/%s", baseUrl, id)
 	} else {
-		// For regular URLs, resource_url is url + ID
 		resourceUrl = fmt.Sprintf("%s/%s", urlValue, id)
 	}
 
@@ -765,7 +752,6 @@ func (r *MSGraphResource) MoveState(ctx context.Context) []resource.StateMover {
 					idValue = requestID[lastIndex+1:]
 				}
 
-				// For $ref URLs, resource_url should be the collection URL without $ref + the ID
 				baseUrl := strings.TrimSuffix(urlValue, "/$ref")
 				resourceUrl := fmt.Sprintf("%s/%s", baseUrl, idValue)
 
