@@ -86,6 +86,7 @@ Manage the full contents of a child reference collection (such as group members 
 ### Optional
 
 - `api_version` (String) The API version of the data source. The allowed values are `v1.0` and `beta`. Defaults to `v1.0`.
+- `collection_type` (String) The OData collection type path used when constructing `@odata.id` references. Defaults to `directoryObjects`. Override this for APIs that require a specific collection type, e.g. `identityGovernance/entitlementManagement/accessPackages`.
 - `read_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the read (list) requests.
 - `reference_ids` (List of String) List of object IDs that MUST exist in this `$ref` collection. Missing IDs are added; extra remote items are removed. Order is ignored. Each value should be the GUID (or string identifier) of an existing directory object (user, group, service principal, etc.).
 - `response_export_values` (Map of String) A map where the key is the name for the result and the value is a JMESPath query string to filter the response. Here's an example. If it sets to `{"all" = "@", "app_id" = "appId"}`, it will set the following HCL object to the computed property output.
