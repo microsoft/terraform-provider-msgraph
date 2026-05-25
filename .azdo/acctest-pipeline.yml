@@ -1,0 +1,10 @@
+trigger:
+  branches:
+    include:
+      - with-acctests/**
+      - dependabot/**
+
+pr: none
+
+extends:
+  template: .azdo/ci.yml

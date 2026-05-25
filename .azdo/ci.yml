@@ -1,0 +1,61 @@
+jobs:
+  - job: build
+    timeoutInMinutes: 300
+    displayName: "Build: "
+
+    pool:
+      name: pool-ubuntu-2404
+
+    steps:
+      - task: GoTool@0
+        displayName: "Install correct version of Go"
+        inputs:
+          version: '1.24.11'
+          GOPATH: "$(Pipeline.Workspace)/gopath"
+          GOBIN: "$(GOPATH)/bin"
+
+      - task: TerraformInstaller@1
+        displayName: "Install Terraform"
+        inputs:
+          terraformVersion: "1.15.1"
+
+      - bash: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          terraform_path="$(which terraform)"
+          echo "Terraform installed at: ${terraform_path}"
+          echo "Overriding terraform CLI for acctest to workaround the error: 'cannot run Terraform provider tests: failed to find or install Terraform CLI from [0xc000130100 0xc000154000]: unable to verify checksums signature: openpgp: key expired'"
+          echo "##vso[task.setvariable variable=TF_ACC_TERRAFORM_PATH]${terraform_path}"
+        displayName: "Configure Terraform CLI for acctest"
+
+      - bash: |
+          #!/usr/bin/env bash
+          make tools
+        displayName: "Install Dependencies"
+
+      - bash: |
+          #!/usr/bin/env bash
+          make depscheck
+        displayName: "Verify Vendor Dependencies"
+
+      - bash: |
+          #!/usr/bin/env bash
+          make fmtcheck
+        displayName: "Run Format Check"
+
+      - bash: |
+          #!/usr/bin/env bash
+          make lint
+        displayName: "Run Lint Check"
+
+      - bash: |
+          #!/usr/bin/env bash
+          make testacc
+        displayName: "Run All Tests"
+        env:
+          ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+          ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+          ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+          ARM_TENANT_ID: $(ARM_TENANT_ID)
+          TF_ACC_TERRAFORM_PATH: $(TF_ACC_TERRAFORM_PATH)
+          TESTARGS: $(TESTARGS)
