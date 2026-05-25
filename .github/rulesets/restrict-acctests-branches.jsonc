@@ -1,0 +1,36 @@
+{
+  "name": "Restrict pushes to branches that auto-trigger acctests to avoid spamming and conserve resources (see .azdo/acctest-pipeline.yml)",
+  "target": "branch",
+  "source_type": "Repository",
+  "source": "microsoft/terraform-provider-msgraph",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": [
+        "refs/heads/with-acctests/**",
+        "refs/heads/dependabot/**"
+      ]
+    }
+  },
+  "rules": [
+    {
+      "type": "creation"
+    },
+    {
+      "type": "update"
+    }
+  ],
+  "bypass_actors": [
+    {
+      "actor_id": 29110, // dependabot
+      "actor_type": "Integration",
+      "bypass_mode": "always"
+    },
+    {
+      "actor_id": 2539815, // terraform-azure
+      "actor_type": "Team",
+      "bypass_mode": "always"
+    }
+  ]
+}
