@@ -1,4 +1,5 @@
 {
+  "id": 16817304,
   "name": "Restrict pushes to branches that auto-trigger acctests to avoid spamming and conserve resources (see .azdo/acctest-pipeline.yml)",
   "target": "branch",
   "source_type": "Repository",
@@ -28,7 +29,7 @@
       "bypass_mode": "always"
     },
     {
-      "actor_id": 2539815, // terraform-azure
+      "actor_id": 6271593, // azure-terraform-team
       "actor_type": "Team",
       "bypass_mode": "always"
     }
