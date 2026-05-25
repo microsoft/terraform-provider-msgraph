@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright IBM Corp. 2020, 2026
 // SPDX-License-Identifier: MPL-2.0
 
 package cmd
@@ -113,9 +113,7 @@ func Run(name, version string, args []string, stdin io.Reader, stdout, stderr io
 	return exitCode
 }
 
-// Main has the required function signature for use with testscript
 func Main() int {
-
 	return Run(
 		"tfplugindocs",
 		build.GetVersion(),
@@ -124,4 +122,9 @@ func Main() int {
 		colorable.NewColorableStdout(),
 		colorable.NewColorableStderr(),
 	)
+}
+
+// TestScriptMain has the required function signature for use with testscript
+func TestScriptMain() {
+	Main() // Exit code is no longer used by testscript
 }

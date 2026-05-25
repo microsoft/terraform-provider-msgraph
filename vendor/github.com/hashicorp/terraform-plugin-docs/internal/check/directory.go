@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright IBM Corp. 2020, 2026
 // SPDX-License-Identifier: MPL-2.0
 
 package check
@@ -19,6 +19,9 @@ const (
 	LegacyGuidesDirectory             = `guides`
 	LegacyResourcesDirectory          = `r`
 	LegacyFunctionsDirectory          = `functions`
+	LegacyActionsDirectory            = `actions`
+	LegacyListResourcesDirectory      = "list-resources"
+	LegacyStateStoresDirectory        = "state-stores"
 
 	RegistryIndexDirectory              = `docs`
 	RegistryDataSourcesDirectory        = `data-sources`
@@ -26,6 +29,9 @@ const (
 	RegistryGuidesDirectory             = `guides`
 	RegistryResourcesDirectory          = `resources`
 	RegistryFunctionsDirectory          = `functions`
+	RegistryActionsDirectory            = `actions`
+	RegistryListResourcesDirectory      = "list-resources"
+	RegistryStateStoresDirectory        = "state-stores"
 
 	// Terraform Registry Storage Limits
 	// https://www.terraform.io/docs/registry/providers/docs.html#storage-limits
@@ -41,6 +47,9 @@ var ValidLegacyDirectories = []string{
 	LegacyIndexDirectory + "/" + LegacyGuidesDirectory,
 	LegacyIndexDirectory + "/" + LegacyResourcesDirectory,
 	LegacyIndexDirectory + "/" + LegacyFunctionsDirectory,
+	LegacyIndexDirectory + "/" + LegacyActionsDirectory,
+	LegacyIndexDirectory + "/" + LegacyListResourcesDirectory,
+	LegacyIndexDirectory + "/" + LegacyStateStoresDirectory,
 }
 
 var ValidRegistryDirectories = []string{
@@ -50,6 +59,9 @@ var ValidRegistryDirectories = []string{
 	RegistryIndexDirectory + "/" + RegistryGuidesDirectory,
 	RegistryIndexDirectory + "/" + RegistryResourcesDirectory,
 	RegistryIndexDirectory + "/" + RegistryFunctionsDirectory,
+	RegistryIndexDirectory + "/" + RegistryActionsDirectory,
+	RegistryIndexDirectory + "/" + RegistryListResourcesDirectory,
+	RegistryIndexDirectory + "/" + RegistryStateStoresDirectory,
 }
 
 var ValidCdktfLanguages = []string{
@@ -66,6 +78,9 @@ var ValidLegacySubdirectories = []string{
 	LegacyEphemeralResourcesDirectory,
 	LegacyGuidesDirectory,
 	LegacyResourcesDirectory,
+	LegacyActionsDirectory,
+	LegacyListResourcesDirectory,
+	LegacyStateStoresDirectory,
 }
 
 var ValidRegistrySubdirectories = []string{
@@ -74,6 +89,9 @@ var ValidRegistrySubdirectories = []string{
 	RegistryEphemeralResourcesDirectory,
 	RegistryGuidesDirectory,
 	RegistryResourcesDirectory,
+	RegistryActionsDirectory,
+	RegistryListResourcesDirectory,
+	RegistryStateStoresDirectory,
 }
 
 func InvalidDirectoriesCheck(dirPath string) error {

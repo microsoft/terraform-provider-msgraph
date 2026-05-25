@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright IBM Corp. 2020, 2026
 // SPDX-License-Identifier: MPL-2.0
 
 package schemamd
@@ -92,6 +92,13 @@ func WriteNestedAttributeTypeDescription(w io.Writer, att *tfjson.SchemaAttribut
 
 	if att.Deprecated {
 		_, err = io.WriteString(w, ", Deprecated")
+		if err != nil {
+			return err
+		}
+	}
+
+	if att.WriteOnly {
+		_, err := io.WriteString(w, ", [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)")
 		if err != nil {
 			return err
 		}

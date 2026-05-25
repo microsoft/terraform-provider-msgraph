@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright IBM Corp. 2020, 2026
 // SPDX-License-Identifier: MPL-2.0
 
 package provider
@@ -137,6 +137,27 @@ func (m *migrator) Migrate() error {
 				err := cp(path, filepath.Join(m.ProviderTemplatesDir(), "guides"))
 				if err != nil {
 					return fmt.Errorf("unable to copy guides directory %q: %w", path, err)
+				}
+				return filepath.SkipDir
+			case "actions":
+				m.infof("migrating actions directory: %s", d.Name())
+				err := filepath.WalkDir(path, m.MigrateTemplate("actions"))
+				if err != nil {
+					return err
+				}
+				return filepath.SkipDir
+			case "list-resources":
+				m.infof("migrating list resources directory: %s", d.Name())
+				err := filepath.WalkDir(path, m.MigrateTemplate("list-resources"))
+				if err != nil {
+					return err
+				}
+				return filepath.SkipDir
+			case "state-stores":
+				m.infof("migrating state stores directory: %s", d.Name())
+				err := filepath.WalkDir(path, m.MigrateTemplate("state-stores"))
+				if err != nil {
+					return err
 				}
 				return filepath.SkipDir
 			}
@@ -299,8 +320,13 @@ func (m *migrator) ExtractCodeExamples(content []byte, newRelDir string, templat
 			lang := string(fencedNode.Info.Text(content)[:])
 			switch lang {
 			case "hcl", "terraform":
+
 				exampleCount++
 				ext = ".tf"
+				if strings.Contains(newRelDir, "list-resources") {
+					//m.infof("### DEBUG ### this is a list resource: %s", newRelDir)
+					ext = ".tfquery.hcl"
+				}
 				exampleName = "example_" + strconv.Itoa(exampleCount) + ext
 				examplePath = filepath.Join(m.examplesDir, newRelDir, exampleName)
 				template = fmt.Sprintf("{{tffile \"%s\"}}", examplePath)
