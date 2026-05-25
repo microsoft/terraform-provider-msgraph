@@ -1,2 +1,2 @@
 extends:
-  template: .azdo/ci.yml
+  template: ci.yml

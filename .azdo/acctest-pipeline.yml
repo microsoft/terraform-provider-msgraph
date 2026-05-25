@@ -7,4 +7,4 @@ trigger:
 pr: none
 
 extends:
-  template: .azdo/ci.yml
+  template: ci.yml
