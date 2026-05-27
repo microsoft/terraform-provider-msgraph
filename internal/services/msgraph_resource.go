@@ -435,7 +435,7 @@ func (r *MSGraphResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 		if v, _ := req.Private.GetKey(ctx, FlagMoveState); v != nil && string(v) == "true" {
 			body := map[string]string{
-				"@odata.id": fmt.Sprintf("https://graph.microsoft.com/v1.0/directoryObjects/%s", model.Id.ValueString()),
+				"@odata.id": fmt.Sprintf("%s/v1.0/directoryObjects/%s", r.client.GraphBaseUrl(), model.Id.ValueString()),
 			}
 			data, err := json.Marshal(body)
 			if err != nil {
