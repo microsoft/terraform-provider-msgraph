@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -694,12 +695,9 @@ func buildOutputFromBody(body interface{}, paths map[string]string) attr.Value {
 	return out
 }
 
-// resolveResourceID returns the resource ID for a created resource: the response
-// body's top-level `id` when present, otherwise the last path segment of the
-// `Location` header (set by the client only for a synchronous 201 Created, so an
-// async 202 monitor URL is never used). Covers APIs keyed by a non-`id` field.
-// The result is verified
-// by the read of {url}/{id} that follows, so a wrong value fails loudly.
+// resolveResourceID returns the created resource ID: the response body's top-level
+// `id` when present, otherwise the last path segment of the `Location` header (for
+// APIs keyed by a non-`id` field).
 func resolveResourceID(responseBody interface{}, location string) (string, error) {
 	if responseMap, ok := responseBody.(map[string]interface{}); ok {
 		if id, ok := responseMap["id"].(string); ok && id != "" {
@@ -715,7 +713,7 @@ func resolveResourceID(responseBody interface{}, location string) (string, error
 		}
 	}
 
-	return "", fmt.Errorf("unable to determine the resource ID: the create response contained no top-level `id` field and no usable `Location` header")
+	return "", errors.New("unable to determine the resource ID: the create response contained no top-level `id` field and no usable `Location` header")
 }
 
 func (r *MSGraphResource) MoveState(ctx context.Context) []resource.StateMover {

@@ -230,17 +230,13 @@ func (client *MSGraphClient) Create(ctx context.Context, url string, apiVersion 
 		return nil, "", runtime.NewResponseError(resp)
 	}
 
-	// The Location header is only treated as the created resource's URL on a
-	// synchronous 201 Created response. On 202 Accepted, Microsoft Graph uses
-	// Location for a long-running-operation *monitor* URL whose final segment is
-	// an async job id, not the resource key, so it must not be used to derive the
-	// resource ID. See https://learn.microsoft.com/graph/long-running-actions-overview.
+	// Only use Location on a synchronous 201 Created. On 202 Accepted it points to
+	// a long-running-operation monitor URL, not the created resource.
+	// TODO: Handle long-running (202 Accepted) operations if needed.
 	location := ""
 	if resp.StatusCode == http.StatusCreated {
 		location = resp.Header.Get("Location")
 	}
-
-	// TODO: Handle long-running (202 Accepted) operations if needed.
 
 	var responseBody interface{}
 	if err := runtime.UnmarshalAsJSON(resp, &responseBody); err != nil {
