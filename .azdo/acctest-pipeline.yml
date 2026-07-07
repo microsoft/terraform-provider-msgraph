@@ -6,5 +6,8 @@ trigger:
 
 pr: none
 
+variables:
+  TESTARGS: "-run TestAcc"
+
 extends:
   template: ci.yml
