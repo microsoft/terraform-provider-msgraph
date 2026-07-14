@@ -107,8 +107,10 @@ func NewRetryOptionsForReadAfterCreate() *policy.RetryOptions {
 	statusCodes = append(statusCodes, DefaultRetryableReadAfterCreateStatusCodes...)
 	return &policy.RetryOptions{
 		// Set a very high max retries to make sure context deadline is respected.
-		MaxRetries:  math.MaxInt16,
-		StatusCodes: statusCodes,
+		MaxRetries: math.MaxInt16,
+		// Graph API Retry-After can reach 315s on Identity Governance endpoints, cap must exceed this.
+		MaxRetryDelay: 600 * time.Second,
+		StatusCodes:   statusCodes,
 		ShouldRetry: func(resp *http.Response, err error) bool {
 			// We need to test for status codes here too. This covers the case that these options are combined with
 			// retry options from NewRetryOptions, because the ShouldRetry function takes precedence over StatusCodes.
@@ -135,8 +137,10 @@ func NewRetryOptions(rtry retry.Value) *policy.RetryOptions {
 	log.Printf("[DEBUG] Using custom retry configuration")
 	return &policy.RetryOptions{
 		// Set a very high max retries to make sure context deadline is respected.
-		MaxRetries:  math.MaxInt16,
-		StatusCodes: DefaultRetryableStatusCodes,
+		MaxRetries: math.MaxInt16,
+		// Graph API Retry-After can reach 315s on Identity Governance endpoints, cap must exceed this.
+		MaxRetryDelay: 600 * time.Second,
+		StatusCodes:   DefaultRetryableStatusCodes,
 		ShouldRetry: func(resp *http.Response, err error) bool {
 			if resp == nil {
 				return err != nil
