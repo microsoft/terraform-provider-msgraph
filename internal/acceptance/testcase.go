@@ -201,13 +201,11 @@ func CheckDestroyedFunc(client *clients.Client, testResource TestResource, resou
 
 			// Deletions replicate asynchronously across Microsoft Graph, so a read issued
 			// immediately after a successful delete may still be served by a replica which
-			// has yet to catch up. Wait for the resource to consistently report as absent,
-			// using the same primitive the provider uses after issuing a delete. Tests read
-			// straight after apply, so require the stricter test-only confirmation count
-			// rather than the provider default.
-			if err := consistency.WaitForDeletion(ctx, func(ctx context.Context) (*bool, error) {
+			// has yet to catch up. Wait for the resource to consistently report as absent.
+			err := consistency.WaitForDeletion(ctx, func(ctx context.Context) (*bool, error) {
 				return testResource.Exists(ctx, client, resourceState.Primary)
-			}); err != nil {
+			})
+			if err != nil {
 				return fmt.Errorf("%q still exists: %+v", resourceName, err)
 			}
 		}

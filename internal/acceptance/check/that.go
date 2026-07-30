@@ -205,7 +205,6 @@ func ExistsInAzure(client *clients.Client, testResource acceptance.TestResource,
 func existsFunc(shouldExist bool) func(*clients.Client, acceptance.TestResource, string) resource.TestCheckFunc {
 	return func(client *clients.Client, testResource acceptance.TestResource, resourceName string) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
-			// even with rate limiting - an exists function should never take more than 5m, so should be safe
 			ctx, cancel := context.WithDeadline(client.StopContext, time.Now().Add(acceptance.ConsistencyTimeout))
 			defer cancel()
 
