@@ -314,11 +314,14 @@ func (r MSGraphTestResource) Exists(ctx context.Context, client *clients.Client,
 	if strings.Contains(url, "/$ref") {
 		collectionUrl := strings.TrimSuffix(url, "/$ref")
 		referenceIds, err := client.MSGraphClient.ListRefIDs(ctx, collectionUrl, "beta", clients.DefaultRequestOptions())
-
 		found := false
 		if err != nil {
-			return &found, err
+			if utils.ResponseErrorWasNotFound(err) {
+				return &found, nil
+			}
+			return nil, err
 		}
+
 		// Check if state.ID exists in the responseBody
 		for _, refId := range referenceIds {
 			if refId == state.ID {
