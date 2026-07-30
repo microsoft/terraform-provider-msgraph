@@ -1,9 +1,11 @@
 package acceptance
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -11,12 +13,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
 	"github.com/microsoft/terraform-provider-msgraph/internal/provider"
+	"github.com/microsoft/terraform-provider-msgraph/internal/utils/consistency"
 )
 
 const (
 	// charSetAlphaNum is the alphanumeric character set for use with randStringFromCharSet
 	charSetAlphaNum = "abcdefghijklmnopqrstuvwxyz012346789"
 )
+
+const ConsistencyTimeout = 5 * time.Minute
 
 type TestData struct {
 	// RandomInteger is a random integer which is unique to this test case
@@ -183,7 +188,8 @@ For tests that authenticate with Azure by using a Service Principal with Certifi
 // CheckDestroyedFunc returns a TestCheckFunc which validates the resource no longer exists
 func CheckDestroyedFunc(client *clients.Client, testResource TestResource, resourceType, resourceName string) func(state *terraform.State) error {
 	return func(state *terraform.State) error {
-		ctx := client.StopContext
+		ctx, cancel := context.WithDeadline(client.StopContext, time.Now().Add(ConsistencyTimeout))
+		defer cancel()
 
 		for label, resourceState := range state.RootModule().Resources {
 			if resourceState.Type != resourceType {
@@ -193,13 +199,16 @@ func CheckDestroyedFunc(client *clients.Client, testResource TestResource, resou
 				continue
 			}
 
-			// Destroy is unconcerned with an error checking the status, since this is going to be "not found"
-			result, err := testResource.Exists(ctx, client, resourceState.Primary)
-			if result == nil && err == nil {
-				return fmt.Errorf("should have either an error or a result when checking if %q has been destroyed", resourceName)
-			}
-			if result != nil && *result {
-				return fmt.Errorf("%q still exists", resourceName)
+			// Deletions replicate asynchronously across Microsoft Graph, so a read issued
+			// immediately after a successful delete may still be served by a replica which
+			// has yet to catch up. Wait for the resource to consistently report as absent,
+			// using the same primitive the provider uses after issuing a delete. Tests read
+			// straight after apply, so require the stricter test-only confirmation count
+			// rather than the provider default.
+			if err := consistency.WaitForDeletion(ctx, func(ctx context.Context) (*bool, error) {
+				return testResource.Exists(ctx, client, resourceState.Primary)
+			}); err != nil {
+				return fmt.Errorf("%q still exists: %+v", resourceName, err)
 			}
 		}
 

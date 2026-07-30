@@ -1,10 +1,13 @@
 package check
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -202,11 +205,17 @@ func ExistsInAzure(client *clients.Client, testResource acceptance.TestResource,
 func existsFunc(shouldExist bool) func(*clients.Client, acceptance.TestResource, string) resource.TestCheckFunc {
 	return func(client *clients.Client, testResource acceptance.TestResource, resourceName string) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
-			ctx := client.StopContext
+			// even with rate limiting - an exists function should never take more than 5m, so should be safe
+			ctx, cancel := context.WithDeadline(client.StopContext, time.Now().Add(acceptance.ConsistencyTimeout))
+			defer cancel()
 
 			rs, ok := s.RootModule().Resources[resourceName]
 			if !ok {
 				return fmt.Errorf("%q was not found in the state", resourceName)
+			}
+
+			if shouldExist {
+				ctx = policy.WithRetryOptions(ctx, *clients.NewRetryOptionsForReadAfterCreate())
 			}
 
 			result, err := testResource.Exists(ctx, client, rs.Primary)
