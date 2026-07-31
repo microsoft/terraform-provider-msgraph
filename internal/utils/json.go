@@ -202,9 +202,18 @@ func isZeroValue(value interface{}) bool {
 // DiffObject computes a minimal patch that transforms old -> new.
 // It returns:
 // - nil if there are no changes
-// - a map[string]interface{} with only changed fields for objects
+// - a map[string]interface{} for objects, containing changed top-level properties
 // - a full new array for arrays when they differ
 // - the new primitive value for scalars when they differ
+//
+// Complex-type semantics: Microsoft Graph treats a nested object (a "complex type",
+// e.g. federatedIdentityCredential.claimsMatchingExpression) as a single atomic value
+// on PATCH - the object sent replaces the stored one, and omitted sub-fields revert to
+// their defaults. Therefore, when any field inside a nested object changes, the ENTIRE
+// object is emitted (from the new/config value), not just the changed sub-field. Sending
+// a partial complex value would cause Graph to drop unchanged siblings such as
+// languageVersion (see issue #137). Minimal-diff semantics are kept only at the top
+// level for scalar and array properties, which follow JSON Merge PATCH (RFC 7396).
 //
 // Special handling: OData metadata fields (keys starting with "@odata.") are always
 // included in the result when they exist in the new object and there are other changes.
@@ -220,13 +229,27 @@ func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) inter
 			res := make(map[string]interface{})
 			// include keys present in new
 			for key, newVal := range newMap {
-				if oldVal, ok := oldValue[key]; ok {
+				oldVal, existed := oldValue[key]
+				switch {
+				case !existed:
+					// key doesn't exist in old -> create. Send the value in full,
+					// dropping redacted placeholder leaves.
+					if v, keep := fullValueForPatch(newVal, option); keep {
+						res[key] = v
+					}
+				case isJSONObject(newVal):
+					// Complex-type property. Graph replaces the whole object on
+					// PATCH, so when it changed we must send it in full (issue #137).
+					if !reflect.DeepEqual(oldVal, newVal) {
+						if v, keep := fullValueForPatch(newVal, option); keep {
+							res[key] = v
+						}
+					}
+				default:
+					// Scalars and arrays keep minimal-diff semantics.
 					if d := DiffObject(oldVal, newVal, option); d != nil {
 						res[key] = d
 					}
-				} else {
-					// key doesn't exist in old -> create
-					res[key] = newVal
 				}
 			}
 
@@ -268,4 +291,41 @@ func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) inter
 	}
 	// primitives or differing types -> return new
 	return new
+}
+
+// isJSONObject reports whether v is a JSON object (map), i.e. a Graph complex type.
+func isJSONObject(v interface{}) bool {
+	_, ok := v.(map[string]interface{})
+	return ok
+}
+
+// fullValueForPatch returns the value to include in a PATCH body when a property must
+// be sent in full (a Graph complex type, or a newly added property). It preserves the
+// entire value but drops redacted/placeholder string leaves when IgnoreMissingProperty
+// is set, so secrets read back as "****" or "<redacted>" are never written back. The
+// second return value is false when the value should be omitted entirely (e.g. an
+// object that became empty solely because all of its leaves were redacted).
+func fullValueForPatch(v interface{}, option UpdateJsonOption) (interface{}, bool) {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		res := make(map[string]interface{})
+		for k, sub := range val {
+			if cleaned, keep := fullValueForPatch(sub, option); keep {
+				res[k] = cleaned
+			}
+		}
+		// Keep an explicitly empty object, but drop one that became empty only
+		// because every leaf was a redacted placeholder.
+		if len(res) == 0 && len(val) != 0 {
+			return nil, false
+		}
+		return res, true
+	case string:
+		if option.IgnoreMissingProperty && (regexp.MustCompile(`^\*+$`).MatchString(val) || val == "<redacted>" || val == "") {
+			return nil, false
+		}
+		return val, true
+	default:
+		return v, true
+	}
 }

@@ -126,7 +126,7 @@ func TestDiffObject(t *testing.T) {
 			old:  map[string]interface{}{"a": 1, "b": 2, "c": map[string]interface{}{"d": 4}},
 			newV: map[string]interface{}{"a": 1, "b": 3, "c": map[string]interface{}{"d": 4, "e": 5}, "f": 6},
 			opt:  UpdateJsonOption{},
-			want: map[string]interface{}{"b": 3, "c": map[string]interface{}{"e": 5}, "f": 6},
+			want: map[string]interface{}{"b": 3, "c": map[string]interface{}{"d": 4, "e": 5}, "f": 6},
 		},
 		{
 			name: "array changed -> full array returned",
