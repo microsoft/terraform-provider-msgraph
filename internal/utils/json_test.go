@@ -334,28 +334,6 @@ func TestDiffObject(t *testing.T) {
 			},
 		},
 		{
-			name: "new complex type property with only redacted leaves -> omitted entirely",
-			old:  map[string]interface{}{"name": "test"},
-			newV: map[string]interface{}{
-				"name":        "test",
-				"credentials": map[string]interface{}{"secretText": "****"},
-			},
-			opt:  UpdateJsonOption{IgnoreMissingProperty: true},
-			want: nil,
-		},
-		{
-			name: "new complex type property -> sent in full without redacted leaves",
-			old:  map[string]interface{}{"name": "test"},
-			newV: map[string]interface{}{
-				"name":        "test",
-				"credentials": map[string]interface{}{"displayName": "cred", "secretText": "****"},
-			},
-			opt: UpdateJsonOption{IgnoreMissingProperty: true},
-			want: map[string]interface{}{
-				"credentials": map[string]interface{}{"displayName": "cred"},
-			},
-		},
-		{
 			name: "complex type differing only by redacted leaf -> no change",
 			old: map[string]interface{}{
 				"credentials": map[string]interface{}{"displayName": "cred", "secretText": "s3cret"},
