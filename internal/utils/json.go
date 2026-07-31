@@ -215,13 +215,10 @@ func isZeroValue(value interface{}) bool {
 // - a map[string]interface{} listing every changed top-level property in full
 // - the new value itself for arrays and scalars when they differ
 //
-// Values are never partially diffed. Microsoft Graph applies JSON Merge PATCH (RFC 7396)
-// at the top level only: a nested object (a "complex type", e.g.
-// federatedIdentityCredential.claimsMatchingExpression) is replaced wholesale, so any
-// sub-field omitted from the request reverts to its default. Arrays and scalars are
-// replaced the same way. Every changed property is therefore emitted in full from the
-// new/config value - sending a partial complex value would drop unchanged siblings such
-// as languageVersion (see issue #137).
+// Changed values are never partially diffed. RFC 7396 would merge a nested object, but
+// some Graph endpoints replace a complex type wholesale, resetting omitted sub-fields to
+// their defaults (issue #137: patching claimsMatchingExpression.value reset
+// languageVersion).
 //
 // Special handling: OData metadata fields (keys starting with "@odata.") are always
 // included in the result when they exist in the new object and there are other changes.
