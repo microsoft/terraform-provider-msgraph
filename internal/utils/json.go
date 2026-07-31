@@ -71,14 +71,16 @@ type UpdateJsonOption struct {
 	IgnoreNullProperty    bool
 }
 
+var redactedAsterisksRE = regexp.MustCompile(`^\*+$`)
+
 // isRedactedString reports whether s is a placeholder that Graph returned instead of the
-// real value, and therefore must never be written back. An empty string is included
-// because Graph omits or blanks out several write-only properties on read.
+// real value, and therefore should not be written back when IgnoreMissingProperty is enabled.
+// An empty string is included because Graph omits or blanks out several write-only properties on read.
 func isRedactedString(s string, option UpdateJsonOption) bool {
 	if !option.IgnoreMissingProperty {
 		return false
 	}
-	return regexp.MustCompile(`^\*+$`).MatchString(s) || s == "<redacted>" || s == ""
+	return redactedAsterisksRE.MatchString(s) || s == "<redacted>" || s == ""
 }
 
 // UpdateObject is used to get an updated object which has same schema as old, but with new value
