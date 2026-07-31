@@ -71,6 +71,16 @@ type UpdateJsonOption struct {
 	IgnoreNullProperty    bool
 }
 
+// isRedactedString reports whether s is a placeholder that Graph returned instead of the
+// real value, and therefore must never be written back. An empty string is included
+// because Graph omits or blanks out several write-only properties on read.
+func isRedactedString(s string, option UpdateJsonOption) bool {
+	if !option.IgnoreMissingProperty {
+		return false
+	}
+	return regexp.MustCompile(`^\*+$`).MatchString(s) || s == "<redacted>" || s == ""
+}
+
 // UpdateObject is used to get an updated object which has same schema as old, but with new value
 func UpdateObject(old interface{}, new interface{}, option UpdateJsonOption) interface{} {
 	if reflect.DeepEqual(old, new) {
@@ -147,7 +157,7 @@ func UpdateObject(old interface{}, new interface{}, option UpdateJsonOption) int
 			if option.IgnoreCasing && strings.EqualFold(oldValue, newStr) {
 				return oldValue
 			}
-			if option.IgnoreMissingProperty && (regexp.MustCompile(`^\*+$`).MatchString(newStr) || newStr == "<redacted>" || newStr == "") {
+			if isRedactedString(newStr, option) {
 				return oldValue
 			}
 		}
@@ -240,7 +250,7 @@ func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) inter
 				case isJSONObject(newVal):
 					// Complex-type property. Graph replaces the whole object on
 					// PATCH, so when it changed we must send it in full (issue #137).
-					if !reflect.DeepEqual(oldVal, newVal) {
+					if DiffObject(oldVal, newVal, option) != nil {
 						if v, keep := fullValueForPatch(newVal, option); keep {
 							res[key] = v
 						}
@@ -284,7 +294,7 @@ func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) inter
 			if option.IgnoreCasing && strings.EqualFold(oldValue, newStr) {
 				return nil
 			}
-			if option.IgnoreMissingProperty && (regexp.MustCompile(`^\*+$`).MatchString(newStr) || newStr == "<redacted>" || newStr == "") {
+			if isRedactedString(newStr, option) {
 				return nil
 			}
 		}
@@ -302,9 +312,11 @@ func isJSONObject(v interface{}) bool {
 // fullValueForPatch returns the value to include in a PATCH body when a property must
 // be sent in full (a Graph complex type, or a newly added property). It preserves the
 // entire value but drops redacted/placeholder string leaves when IgnoreMissingProperty
-// is set, so secrets read back as "****" or "<redacted>" are never written back. The
-// second return value is false when the value should be omitted entirely (e.g. an
-// object that became empty solely because all of its leaves were redacted).
+// is set, so secrets read back as "****", "<redacted>" or "" are never written back.
+// Note that this means an intentionally empty string inside a complex type is omitted
+// when IgnoreMissingProperty is set, matching UpdateObject's behaviour. The second
+// return value is false when the value should be omitted entirely (e.g. an object that
+// became empty solely because all of its leaves were redacted).
 func fullValueForPatch(v interface{}, option UpdateJsonOption) (interface{}, bool) {
 	switch val := v.(type) {
 	case map[string]interface{}:
@@ -321,7 +333,7 @@ func fullValueForPatch(v interface{}, option UpdateJsonOption) (interface{}, boo
 		}
 		return res, true
 	case string:
-		if option.IgnoreMissingProperty && (regexp.MustCompile(`^\*+$`).MatchString(val) || val == "<redacted>" || val == "") {
+		if isRedactedString(val, option) {
 			return nil, false
 		}
 		return val, true

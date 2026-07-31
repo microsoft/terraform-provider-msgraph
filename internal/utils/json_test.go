@@ -309,6 +309,74 @@ func TestDiffObject(t *testing.T) {
 			opt:  UpdateJsonOption{},
 			want: map[string]interface{}{"a": []interface{}{}},
 		},
+		{
+			name: "nested complex type changed -> full object sent",
+			old: map[string]interface{}{
+				"name": "acctest-github-federated-oidc",
+				"claimsMatchingExpression": map[string]interface{}{
+					"value":           "claims['sub'] matches 'repo:contoso/*'",
+					"languageVersion": 1,
+				},
+			},
+			newV: map[string]interface{}{
+				"name": "acctest-github-federated-oidc",
+				"claimsMatchingExpression": map[string]interface{}{
+					"value":           "claims['sub'] matches 'repo:contoso@123456/*'",
+					"languageVersion": 1,
+				},
+			},
+			opt: UpdateJsonOption{},
+			want: map[string]interface{}{
+				"claimsMatchingExpression": map[string]interface{}{
+					"value":           "claims['sub'] matches 'repo:contoso@123456/*'",
+					"languageVersion": 1,
+				},
+			},
+		},
+		{
+			name: "new complex type property with only redacted leaves -> omitted entirely",
+			old:  map[string]interface{}{"name": "test"},
+			newV: map[string]interface{}{
+				"name":        "test",
+				"credentials": map[string]interface{}{"secretText": "****"},
+			},
+			opt:  UpdateJsonOption{IgnoreMissingProperty: true},
+			want: nil,
+		},
+		{
+			name: "new complex type property -> sent in full without redacted leaves",
+			old:  map[string]interface{}{"name": "test"},
+			newV: map[string]interface{}{
+				"name":        "test",
+				"credentials": map[string]interface{}{"displayName": "cred", "secretText": "****"},
+			},
+			opt: UpdateJsonOption{IgnoreMissingProperty: true},
+			want: map[string]interface{}{
+				"credentials": map[string]interface{}{"displayName": "cred"},
+			},
+		},
+		{
+			name: "complex type differing only by redacted leaf -> no change",
+			old: map[string]interface{}{
+				"credentials": map[string]interface{}{"displayName": "cred", "secretText": "s3cret"},
+			},
+			newV: map[string]interface{}{
+				"credentials": map[string]interface{}{"displayName": "cred", "secretText": "****"},
+			},
+			opt:  UpdateJsonOption{IgnoreMissingProperty: true},
+			want: nil,
+		},
+		{
+			name: "complex type differing only by casing -> no change when IgnoreCasing",
+			old: map[string]interface{}{
+				"settings": map[string]interface{}{"value": "Enabled"},
+			},
+			newV: map[string]interface{}{
+				"settings": map[string]interface{}{"value": "enabled"},
+			},
+			opt:  UpdateJsonOption{IgnoreCasing: true},
+			want: nil,
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {

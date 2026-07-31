@@ -3,7 +3,6 @@
 BUG FIXES:
 - `msgraph_resource`: Fixed an issue where updating a nested object (complex type) sent only the changed sub-fields, causing Microsoft Graph to reset omitted siblings to their defaults. The provider now sends the full nested object when any of its fields change (e.g. `federatedIdentityCredential.claimsMatchingExpression`). ([#137](https://github.com/microsoft/terraform-provider-msgraph/issues/137))
 
-
 ## 0.4.0
 
 ENHANCEMENTS:
