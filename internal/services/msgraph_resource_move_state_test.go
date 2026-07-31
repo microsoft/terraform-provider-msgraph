@@ -14,7 +14,7 @@ func externalProvidersAzureAD() map[string]resource.ExternalProvider {
 	return map[string]resource.ExternalProvider{
 		"azuread": {
 			Source:            "hashicorp/azuread",
-			VersionConstraint: "3.0.2",
+			VersionConstraint: "3.3.0",
 		},
 	}
 }
