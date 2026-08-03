@@ -315,7 +315,7 @@ func (r MSGraphTestResource) Exists(ctx context.Context, client *clients.Client,
 		collectionUrl := strings.TrimSuffix(url, "/$ref")
 		found := false
 
-		referenceIds, err := client.MSGraphClient.ListRefIDs(ctx, collectionUrl, apiVersion, clients.DefaultRequestOptions())
+		referenceIds, err := client.MSGraphClient.ListRefIDs(ctx, collectionUrl, "beta", clients.DefaultRequestOptions())
 		if err != nil {
 			if utils.ResponseErrorWasNotFound(err) {
 				return &found, nil
