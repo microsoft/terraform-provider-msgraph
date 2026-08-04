@@ -101,7 +101,7 @@ func CombineRetryOptions(opts ...*policy.RetryOptions) *policy.RetryOptions {
 // NewRetryOptionsForReadAfterCreate creates a RetryOptions for read-after-create operations.
 func NewRetryOptionsForReadAfterCreate() *policy.RetryOptions {
 	log.Printf("[DEBUG] Using custom retry configuration for read after create")
-	statusCodes := make([]int, 0)
+	statusCodes := make([]int, 0, len(DefaultRetryableStatusCodes)+len(DefaultRetryableReadAfterCreateStatusCodes))
 	statusCodes = append(statusCodes, DefaultRetryableStatusCodes...)
 	// Add default read after create values for the default retry configuration.
 	statusCodes = append(statusCodes, DefaultRetryableReadAfterCreateStatusCodes...)
