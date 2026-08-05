@@ -23,7 +23,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
 	"github.com/microsoft/terraform-provider-msgraph/internal/docstrings"
-	"github.com/microsoft/terraform-provider-msgraph/internal/myplanmodifier"
 	"github.com/microsoft/terraform-provider-msgraph/internal/myvalidator"
 	"github.com/microsoft/terraform-provider-msgraph/internal/retry"
 	"github.com/microsoft/terraform-provider-msgraph/internal/utils"
@@ -46,7 +45,7 @@ type MSGraphResourceCollectionModel struct {
 	Id                   types.String      `tfsdk:"id"`
 	ApiVersion           types.String      `tfsdk:"api_version"`
 	Url                  types.String      `tfsdk:"url"`
-	ReferenceIds         types.List        `tfsdk:"reference_ids"`
+	ReferenceIds         types.Set         `tfsdk:"reference_ids"`
 	SkipDestroy          types.Bool        `tfsdk:"skip_destroy"`
 	ReadQueryParameters  types.Map         `tfsdk:"read_query_parameters"`
 	Retry                retry.Value       `tfsdk:"retry"`
@@ -90,11 +89,10 @@ func (r *MSGraphResourceCollection) Schema(ctx context.Context, req resource.Sch
 				Default:             stringdefault.StaticString("v1.0"),
 			},
 
-			"reference_ids": schema.ListAttribute{
-				MarkdownDescription: "List of object IDs that MUST exist in this `$ref` collection. Missing IDs are added; extra remote items are removed. Order is ignored. Each value should be the GUID (or string identifier) of an existing directory object (user, group, service principal, etc.).",
+			"reference_ids": schema.SetAttribute{
+				MarkdownDescription: "A set of object IDs that must exist in this `$ref` collection. Missing IDs are added; extra remote items are removed. Membership is order-independent. Each value should be the GUID (or string identifier) of an existing directory object (user, group, service principal, etc.).",
 				ElementType:         types.StringType,
 				Optional:            true,
-				PlanModifiers:       []planmodifier.List{myplanmodifier.OrderInsensitiveStringList()},
 			},
 
 			"skip_destroy": schema.BoolAttribute{
@@ -166,7 +164,7 @@ func (r *MSGraphResourceCollection) Create(ctx context.Context, req resource.Cre
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	newItems := AsListOfString(model.ReferenceIds)
+	newItems := AsSetOfString(model.ReferenceIds)
 	if err := r.syncCollection(ctx, model, nil, newItems); err != nil {
 		resp.Diagnostics.AddError("Failed to sync collection", err.Error())
 		return
@@ -206,8 +204,8 @@ func (r *MSGraphResourceCollection) Update(ctx context.Context, req resource.Upd
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	newItems := AsListOfString(model.ReferenceIds)
-	oldItems := AsListOfString(state.ReferenceIds)
+	newItems := AsSetOfString(model.ReferenceIds)
+	oldItems := AsSetOfString(state.ReferenceIds)
 	if err := r.syncCollection(ctx, model, oldItems, newItems); err != nil {
 		resp.Diagnostics.AddError("Failed to sync collection", err.Error())
 		return
@@ -260,7 +258,7 @@ func (r *MSGraphResourceCollection) Read(ctx context.Context, req resource.ReadR
 		resp.Diagnostics.AddError("Failed to parse collection", err.Error())
 		return
 	}
-	model.ReferenceIds = ToListOfString(referenceIds)
+	model.ReferenceIds = ToSetOfString(referenceIds)
 	model.Output = types.DynamicValue(buildOutputFromBody(body, model.ResponseExportValues))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
@@ -281,7 +279,7 @@ func (r *MSGraphResourceCollection) Delete(ctx context.Context, req resource.Del
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	oldItems := AsListOfString(model.ReferenceIds)
+	oldItems := AsSetOfString(model.ReferenceIds)
 	if err := r.syncCollection(ctx, model, oldItems, nil); err != nil {
 		resp.Diagnostics.AddError("Failed to sync collection", err.Error())
 		return
@@ -383,7 +381,7 @@ func (r *MSGraphResourceCollection) ImportState(ctx context.Context, req resourc
 		Id:                  types.StringValue(baseCollectionUrl(urlValue)),
 		Url:                 types.StringValue(urlValue),
 		ApiVersion:          types.StringValue(apiVersion),
-		ReferenceIds:        types.ListNull(types.StringType),
+		ReferenceIds:        types.SetNull(types.StringType),
 		SkipDestroy:         types.BoolValue(false),
 		ReadQueryParameters: types.MapNull(types.ListType{ElemType: types.StringType}),
 		Retry:               retry.NewValueNull(),

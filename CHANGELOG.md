@@ -1,3 +1,12 @@
+## 0.5.0
+
+BREAKING CHANGES:
+- `msgraph_resource_collection`: The `reference_ids` attribute is now a set instead of a list, since a Microsoft Graph `$ref` collection is an unordered set. Reordering the same IDs no longer produces a diff.
+
+BUG FIXES:
+- `msgraph_resource_collection`: Fixed a "Provider produced inconsistent final plan" error on `reference_ids` when only some of the referenced resources were updated in the same apply (a mix of known and unknown values at plan time). `reference_ids` is now modeled as an unordered set, so member ordering no longer affects planning. ([#135](https://github.com/microsoft/terraform-provider-msgraph/issues/135))
+
+
 ## 0.4.0
 
 ENHANCEMENTS:
