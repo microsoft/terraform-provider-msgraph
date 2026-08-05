@@ -72,7 +72,7 @@ func TestAcc_ResourceCollectionUpdate(t *testing.T) {
 				resource.TestCheckResourceAttr(data.ResourceName, "reference_ids.#", "2"),
 			),
 		},
-		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, "reference_ids.#"),
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFunc, "reference_ids.#", "reference_ids.0", "reference_ids.1"),
 		{
 			// remove second member again
 			Config: r.updateOneMember(),

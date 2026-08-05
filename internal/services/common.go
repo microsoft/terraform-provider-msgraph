@@ -38,29 +38,12 @@ func AsMapOfLists(input types.Map) map[string][]string {
 	return result
 }
 
-func AsSetOfString(input types.Set) []string {
-	result := make([]string, 0)
-	diags := input.ElementsAs(context.Background(), &result, false)
-	if diags.HasError() {
-		tflog.Warn(context.Background(), fmt.Sprintf("failed to convert input to set of strings: %s", diags))
-	}
-	return result
-}
-
 func ToListOfString(input []string) types.List {
 	result := make([]attr.Value, 0, len(input))
 	for _, v := range input {
 		result = append(result, types.StringValue(v))
 	}
 	return types.ListValueMust(types.StringType, result)
-}
-
-func ToSetOfString(input []string) types.Set {
-	result := make([]attr.Value, 0, len(input))
-	for _, v := range input {
-		result = append(result, types.StringValue(v))
-	}
-	return types.SetValueMust(types.StringType, result)
 }
 
 func unmarshalBody(input types.Dynamic, out interface{}) error {
