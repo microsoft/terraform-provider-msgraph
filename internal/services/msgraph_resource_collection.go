@@ -260,7 +260,9 @@ func (r *MSGraphResourceCollection) Read(ctx context.Context, req resource.ReadR
 		resp.Diagnostics.AddError("Failed to parse collection", err.Error())
 		return
 	}
-	model.ReferenceIds = ToListOfString(referenceIds)
+
+	previous := AsListOfString(model.ReferenceIds)
+	model.ReferenceIds = ToListOfString(reconcileReferenceIdOrder(previous, referenceIds))
 	model.Output = types.DynamicValue(buildOutputFromBody(body, model.ResponseExportValues))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
@@ -355,6 +357,37 @@ func flattenReferenceIds(body interface{}) ([]string, error) {
 		result = append(result, v.ID)
 	}
 	return result, nil
+}
+
+// reconcileReferenceIdOrder returns the IDs in `current` reordered to follow the
+// order of `previous` for any IDs still present, with genuinely new IDs (present
+// in `current` but not `previous`) appended at the end in their current order.
+// Matching is case-insensitive to tolerate GUID casing differences returned by
+// Microsoft Graph. This is used to keep the stored order of an unordered `/$ref`
+// collection stable across reads.
+func reconcileReferenceIdOrder(previous, current []string) []string {
+	currentByKey := make(map[string]string, len(current))
+	for _, id := range current {
+		currentByKey[strings.ToLower(id)] = id
+	}
+
+	used := make(map[string]bool, len(current))
+	result := make([]string, 0, len(current))
+	for _, id := range previous {
+		key := strings.ToLower(id)
+		if actual, ok := currentByKey[key]; ok && !used[key] {
+			result = append(result, actual)
+			used[key] = true
+		}
+	}
+	for _, id := range current {
+		key := strings.ToLower(id)
+		if !used[key] {
+			result = append(result, id)
+			used[key] = true
+		}
+	}
+	return result
 }
 
 func (r *MSGraphResourceCollection) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
