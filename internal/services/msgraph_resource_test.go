@@ -269,14 +269,14 @@ func TestAcc_ResourceFederatedIdentityCredentialClaimsExpression(t *testing.T) {
 
 	data.ResourceTest(t, r, []resource.TestStep{
 		{
-			Config: r.federatedIdentityCredentialClaimsExpression("claims['sub'] matches 'repo:contoso/*'"),
+			Config: r.federatedIdentityCredentialClaimsExpression("claims['sub'] matches 'repo:contoso/*' and claims['repository_id'] eq '123456'"),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
 			),
 		},
 		{
-			Config: r.federatedIdentityCredentialClaimsExpression("claims['sub'] matches 'repo:contoso@123456/*'"),
+			Config: r.federatedIdentityCredentialClaimsExpression("claims['sub'] matches 'repo:contoso/contoso-repo:*' and claims['repository_id'] eq '123456'"),
 			Check: resource.ComposeTestCheckFunc(
 				check.That(data.ResourceName).Exists(r),
 				check.That(data.ResourceName).Key("id").IsUUID(),
