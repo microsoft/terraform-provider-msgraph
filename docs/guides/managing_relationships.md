@@ -131,6 +131,8 @@ Use `msgraph_resource` with `$ref` URLs to manage individual relationships. This
 
 ### Example: Adding Individual Group Members
 
+When setting `@odata.id`, use the Microsoft Graph base URL for your selected cloud environment. A simple pattern is to use a local value so the same configuration works across public and sovereign clouds.
+
 ```terraform
 resource "msgraph_resource" "group" {
   url = "groups"
