@@ -262,6 +262,29 @@ func TestAcc_ResourceWithPutUpdateMethod(t *testing.T) {
 	})
 }
 
+func TestAcc_ResourceFederatedIdentityCredentialClaimsExpression(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.federatedIdentityCredentialClaimsExpression("claims['sub'] matches 'repo:contoso/*' and claims['repository_id'] eq '123456'"),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+		},
+		{
+			Config: r.federatedIdentityCredentialClaimsExpression("claims['sub'] matches 'repo:contoso/contoso-repo:*' and claims['repository_id'] eq '123456'"),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("id").IsUUID(),
+			),
+		},
+	})
+}
+
 func TestAcc_ResourceImport_InvalidIDFormat(t *testing.T) {
 	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
 
@@ -645,6 +668,32 @@ resource "msgraph_resource" "test" {
   }
 }
 `, displayName)
+}
+
+func (r MSGraphTestResource) federatedIdentityCredentialClaimsExpression(value string) string {
+	return fmt.Sprintf(`
+resource "msgraph_resource" "application" {
+  url         = "applications"
+  api_version = "beta"
+  body = {
+    displayName = "acctest-fic-claims-app"
+  }
+}
+
+resource "msgraph_resource" "test" {
+  url         = "applications/${msgraph_resource.application.id}/federatedIdentityCredentials"
+  api_version = "beta"
+  body = {
+    name      = "acctest-github-federated-oidc"
+    issuer    = "https://token.actions.githubusercontent.com"
+    audiences = ["api://AzureADTokenExchange"]
+    claimsMatchingExpression = {
+      value           = "%s"
+      languageVersion = 1
+    }
+  }
+}
+`, value)
 }
 
 func (r MSGraphTestResource) applicationWithPasswordCredentials(enabled bool) string {

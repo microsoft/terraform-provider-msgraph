@@ -126,7 +126,7 @@ func TestDiffObject(t *testing.T) {
 			old:  map[string]interface{}{"a": 1, "b": 2, "c": map[string]interface{}{"d": 4}},
 			newV: map[string]interface{}{"a": 1, "b": 3, "c": map[string]interface{}{"d": 4, "e": 5}, "f": 6},
 			opt:  UpdateJsonOption{},
-			want: map[string]interface{}{"b": 3, "c": map[string]interface{}{"e": 5}, "f": 6},
+			want: map[string]interface{}{"b": 3, "c": map[string]interface{}{"d": 4, "e": 5}, "f": 6},
 		},
 		{
 			name: "array changed -> full array returned",
@@ -308,6 +308,52 @@ func TestDiffObject(t *testing.T) {
 			newV: map[string]interface{}{"a": []interface{}{}},
 			opt:  UpdateJsonOption{},
 			want: map[string]interface{}{"a": []interface{}{}},
+		},
+		{
+			name: "nested complex type changed -> full object sent",
+			old: map[string]interface{}{
+				"name": "acctest-github-federated-oidc",
+				"claimsMatchingExpression": map[string]interface{}{
+					"value":           "claims['sub'] matches 'repo:contoso/*'",
+					"languageVersion": 1,
+				},
+			},
+			newV: map[string]interface{}{
+				"name": "acctest-github-federated-oidc",
+				"claimsMatchingExpression": map[string]interface{}{
+					"value":           "claims['sub'] matches 'repo:contoso@123456/*'",
+					"languageVersion": 1,
+				},
+			},
+			opt: UpdateJsonOption{},
+			want: map[string]interface{}{
+				"claimsMatchingExpression": map[string]interface{}{
+					"value":           "claims['sub'] matches 'repo:contoso@123456/*'",
+					"languageVersion": 1,
+				},
+			},
+		},
+		{
+			name: "complex type differing only by redacted leaf -> no change",
+			old: map[string]interface{}{
+				"credentials": map[string]interface{}{"displayName": "cred", "secretText": "s3cret"},
+			},
+			newV: map[string]interface{}{
+				"credentials": map[string]interface{}{"displayName": "cred", "secretText": "****"},
+			},
+			opt:  UpdateJsonOption{IgnoreMissingProperty: true},
+			want: nil,
+		},
+		{
+			name: "complex type differing only by casing -> no change when IgnoreCasing",
+			old: map[string]interface{}{
+				"settings": map[string]interface{}{"value": "Enabled"},
+			},
+			newV: map[string]interface{}{
+				"settings": map[string]interface{}{"value": "enabled"},
+			},
+			opt:  UpdateJsonOption{IgnoreCasing: true},
+			want: nil,
 		},
 	}
 	for _, tc := range testcases {

@@ -71,6 +71,18 @@ type UpdateJsonOption struct {
 	IgnoreNullProperty    bool
 }
 
+var redactedAsterisksRE = regexp.MustCompile(`^\*+$`)
+
+// isRedactedString reports whether s is a placeholder that Graph returned instead of the
+// real value, and therefore should not be written back when IgnoreMissingProperty is enabled.
+// An empty string is included because Graph omits or blanks out several write-only properties on read.
+func isRedactedString(s string, option UpdateJsonOption) bool {
+	if !option.IgnoreMissingProperty {
+		return false
+	}
+	return redactedAsterisksRE.MatchString(s) || s == "<redacted>" || s == ""
+}
+
 // UpdateObject is used to get an updated object which has same schema as old, but with new value
 func UpdateObject(old interface{}, new interface{}, option UpdateJsonOption) interface{} {
 	if reflect.DeepEqual(old, new) {
@@ -147,7 +159,7 @@ func UpdateObject(old interface{}, new interface{}, option UpdateJsonOption) int
 			if option.IgnoreCasing && strings.EqualFold(oldValue, newStr) {
 				return oldValue
 			}
-			if option.IgnoreMissingProperty && (regexp.MustCompile(`^\*+$`).MatchString(newStr) || newStr == "<redacted>" || newStr == "") {
+			if isRedactedString(newStr, option) {
 				return oldValue
 			}
 		}
@@ -202,9 +214,13 @@ func isZeroValue(value interface{}) bool {
 // DiffObject computes a minimal patch that transforms old -> new.
 // It returns:
 // - nil if there are no changes
-// - a map[string]interface{} with only changed fields for objects
-// - a full new array for arrays when they differ
-// - the new primitive value for scalars when they differ
+// - a map[string]interface{} listing every changed top-level property in full
+// - the new value itself for arrays and scalars when they differ
+//
+// Changed values are never partially diffed. RFC 7396 would merge a nested object, but
+// some Graph endpoints replace a complex type wholesale, resetting omitted sub-fields to
+// their defaults (issue #137: patching claimsMatchingExpression.value reset
+// languageVersion).
 //
 // Special handling: OData metadata fields (keys starting with "@odata.") are always
 // included in the result when they exist in the new object and there are other changes.
@@ -222,7 +238,7 @@ func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) inter
 			for key, newVal := range newMap {
 				if oldVal, ok := oldValue[key]; ok {
 					if d := DiffObject(oldVal, newVal, option); d != nil {
-						res[key] = d
+						res[key] = newVal
 					}
 				} else {
 					// key doesn't exist in old -> create
@@ -261,7 +277,7 @@ func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) inter
 			if option.IgnoreCasing && strings.EqualFold(oldValue, newStr) {
 				return nil
 			}
-			if option.IgnoreMissingProperty && (regexp.MustCompile(`^\*+$`).MatchString(newStr) || newStr == "<redacted>" || newStr == "") {
+			if isRedactedString(newStr, option) {
 				return nil
 			}
 		}
