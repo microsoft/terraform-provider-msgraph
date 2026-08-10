@@ -136,7 +136,7 @@ func (p *MSGraphProvider) Schema(ctx context.Context, req provider.SchemaRequest
 				Validators: []validator.String{
 					stringvalidator.OneOfCaseInsensitive(SupportedEnvironments...),
 				},
-				MarkdownDescription: "The cloud environment to use. Supported values are `public` (also `global`), `usgovernment` (also `usgovernmentl4`), `usgovernmentl5` (also `dod`), `germany` (also `german`), and `china`. This can also be sourced from the `ARM_ENVIRONMENT` Environment Variable. Defaults to `public`.",
+				MarkdownDescription: "The cloud environment to use. Supported values are `public` (also `global`), `usgovernment` (also `usgovernmentl4`), `usgovernmentl5` (also `dod`), and `china`. This can also be sourced from the `ARM_ENVIRONMENT` Environment Variable. Defaults to `public`.",
 			},
 
 			"client_id": schema.StringAttribute{

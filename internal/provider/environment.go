@@ -13,22 +13,17 @@ const (
 	EnvironmentPublic         = "public"
 	EnvironmentUSGovernmentL4 = "usgovernmentl4"
 	EnvironmentUSGovernmentL5 = "usgovernmentl5"
-	EnvironmentGermany        = "germany"
 	EnvironmentChina          = "china"
 
 	// Aliases accepted for the canonical names above.
 	EnvironmentGlobal       = "global"
 	EnvironmentUSGovernment = "usgovernment"
 	EnvironmentDoD          = "dod"
-	EnvironmentGerman       = "german"
 
 	GraphHostPublic         = "https://graph.microsoft.com"
 	GraphHostUSGovernmentL4 = "https://graph.microsoft.us"
 	GraphHostUSGovernmentL5 = "https://dod-graph.microsoft.us"
-	GraphHostGermany        = "https://graph.microsoft.de"
 	GraphHostChina          = "https://microsoftgraph.chinacloudapi.cn"
-
-	germanyActiveDirectoryAuthorityHost = "https://login.microsoftonline.de/"
 )
 
 // SupportedEnvironments contains every value accepted for the `environment` argument,
@@ -41,16 +36,7 @@ var SupportedEnvironments = []string{
 	EnvironmentUSGovernmentL4,
 	EnvironmentDoD,
 	EnvironmentUSGovernmentL5,
-	EnvironmentGerman,
-	EnvironmentGermany,
 	EnvironmentChina,
-}
-
-// azureGermanyCloud describes the (now retired) Microsoft Cloud Germany configuration.
-// azcore does not ship a built-in for it, so it is defined here for parity with AzureAD.
-var azureGermanyCloud = cloud.Configuration{
-	ActiveDirectoryAuthorityHost: germanyActiveDirectoryAuthorityHost,
-	Services:                     map[cloud.ServiceName]cloud.ServiceConfiguration{},
 }
 
 // Environments is the single source of truth mapping every accepted environment name
@@ -63,8 +49,6 @@ var Environments = map[string]cloud.Configuration{
 	EnvironmentUSGovernmentL4: withGraphService(cloud.AzureGovernment, GraphHostUSGovernmentL4),
 	EnvironmentDoD:            withGraphService(cloud.AzureGovernment, GraphHostUSGovernmentL5),
 	EnvironmentUSGovernmentL5: withGraphService(cloud.AzureGovernment, GraphHostUSGovernmentL5),
-	EnvironmentGerman:         withGraphService(azureGermanyCloud, GraphHostGermany),
-	EnvironmentGermany:        withGraphService(azureGermanyCloud, GraphHostGermany),
 	EnvironmentChina:          withGraphService(cloud.AzureChina, GraphHostChina),
 }
 
