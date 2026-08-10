@@ -1,5 +1,14 @@
 ## 0.5.0
 
+ENHANCEMENTS:
+- provider: Added sovereign cloud support via the new optional `environment` attribute (or `ARM_ENVIRONMENT`) with support for `public` (`global`), `usgovernment` (`usgovernmentl4`), `usgovernmentl5` (`dod`), and `china`. This configures both authentication cloud endpoints and Microsoft Graph base URLs.
+- `msgraph` client: Graph endpoint and token scope are now resolved from the selected cloud configuration instead of being fixed to the public cloud endpoint.
+- `msgraph_resource`: Relationship payloads that include `@odata.id` now use the configured Microsoft Graph base URL, enabling correct behavior in sovereign clouds.
+
+VALIDATION:
+- Covered by unit tests for `environment` resolution and environment-driven Graph endpoint/token-scope selection.
+- Default behavior is unchanged unless `environment`/`ARM_ENVIRONMENT` is set; feedback from sovereign-cloud users is welcome.
+
 BUG FIXES:
 - `msgraph_resource_collection`: Fixed a "Provider produced inconsistent final plan" error on `reference_ids` that occurred when only some referenced resources were updated in the same apply (a mix of known and known-after-apply values). Because a `/$ref` collection is unordered, reads now preserve the ordering already recorded in state, keeping the stored order aligned with the configured order so pinned positions no longer shift between plan and apply. ([#135](https://github.com/microsoft/terraform-provider-msgraph/issues/135))
 - `msgraph_resource`: Fixed an issue where updating a nested object (complex type) sent only the changed sub-fields, causing Microsoft Graph to reset omitted siblings to their defaults. The provider now sends the full nested object when any of its fields change (e.g. `federatedIdentityCredential.claimsMatchingExpression`). ([#137](https://github.com/microsoft/terraform-provider-msgraph/issues/137))
