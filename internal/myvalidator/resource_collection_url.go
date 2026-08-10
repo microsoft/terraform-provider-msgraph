@@ -38,7 +38,7 @@ func (v resourceCollectionURL) ValidateString(ctx context.Context, req validator
 		resp.Diagnostics.Append(diag.NewAttributeErrorDiagnostic(
 			req.Path,
 			"Invalid URL",
-			"URL must be relative (exclude https://graph.microsoft.com). Provide only the path, e.g. 'groups/{id}/members/$ref'.",
+			"URL must be relative (exclude the Microsoft Graph host). Provide only the path, e.g. 'groups/{id}/members/$ref'.",
 		))
 		return
 	}

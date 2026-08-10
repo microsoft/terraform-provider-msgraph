@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/microsoft/terraform-provider-msgraph/internal/clients"
@@ -24,17 +23,9 @@ func BuildTestClient() (*clients.Client, error) {
 	defer clientLock.Unlock()
 
 	if _client == nil {
-		var cloudConfig cloud.Configuration
-		env := os.Getenv("ARM_ENVIRONMENT")
-		switch strings.ToLower(env) {
-		case "public":
-			cloudConfig = cloud.AzurePublic
-		case "usgovernment":
-			cloudConfig = cloud.AzureGovernment
-		case "china":
-			cloudConfig = cloud.AzureChina
-		default:
-			cloudConfig = cloud.AzurePublic
+		cloudCfg, err := provider.ResolveCloudEnvironment(os.Getenv("ARM_ENVIRONMENT"))
+		if err != nil {
+			return nil, err
 		}
 
 		model := provider.MSGraphProviderModel{}
@@ -109,6 +100,9 @@ func BuildTestClient() (*clients.Client, error) {
 		}
 
 		option := azidentity.DefaultAzureCredentialOptions{
+			ClientOptions: azcore.ClientOptions{
+				Cloud: cloudCfg,
+			},
 			TenantID: model.TenantID.ValueString(),
 		}
 		cred, err := provider.BuildChainedTokenCredential(model, option)
@@ -118,7 +112,7 @@ func BuildTestClient() (*clients.Client, error) {
 
 		copt := &clients.Option{
 			Cred:     cred,
-			CloudCfg: cloudConfig,
+			CloudCfg: cloudCfg,
 			TenantId: os.Getenv("ARM_TENANT_ID"),
 		}
 

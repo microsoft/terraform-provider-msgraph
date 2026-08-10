@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -29,6 +28,7 @@ var _ provider.Provider = &MSGraphProvider{}
 type MSGraphProvider struct{}
 
 type MSGraphProviderModel struct {
+	Environment                  types.String `tfsdk:"environment"`
 	ClientID                     types.String `tfsdk:"client_id"`
 	ClientIDFilePath             types.String `tfsdk:"client_id_file_path"`
 	TenantID                     types.String `tfsdk:"tenant_id"`
@@ -131,6 +131,14 @@ func (p *MSGraphProvider) Schema(ctx context.Context, req provider.SchemaRequest
 	resp.Schema = schema.Schema{
 		Description: "MSGraph provider",
 		Attributes: map[string]schema.Attribute{
+			"environment": schema.StringAttribute{
+				Optional: true,
+				Validators: []validator.String{
+					stringvalidator.OneOfCaseInsensitive(SupportedEnvironments...),
+				},
+				MarkdownDescription: "The cloud environment to use. Supported values are `public` (also `global`), `usgovernment` (also `usgovernmentl4`), `usgovernmentl5` (also `dod`), `germany` (also `german`), and `china`. This can also be sourced from the `ARM_ENVIRONMENT` Environment Variable. Defaults to `public`.",
+			},
+
 			"client_id": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The Client ID which should be used. This can also be sourced from the `ARM_CLIENT_ID` Environment Variable.",
@@ -261,6 +269,18 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	// set the defaults from environment variables
+	if model.Environment.IsNull() {
+		if v := os.Getenv("ARM_ENVIRONMENT"); v != "" {
+			model.Environment = types.StringValue(v)
+		}
+	}
+
+	cloudCfg, err := ResolveCloudEnvironment(model.Environment.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid `environment` value", err.Error())
+		return
+	}
+
 	if model.ClientID.IsNull() {
 		if v := os.Getenv("ARM_CLIENT_ID"); v != "" {
 			model.ClientID = types.StringValue(v)
@@ -419,6 +439,9 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	option := azidentity.DefaultAzureCredentialOptions{
+		ClientOptions: azcore.ClientOptions{
+			Cloud: cloudCfg,
+		},
 		TenantID: model.TenantID.ValueString(),
 	}
 
@@ -433,7 +456,7 @@ func (p *MSGraphProvider) Configure(ctx context.Context, req provider.ConfigureR
 		ApplicationUserAgent:        buildUserAgent(req.TerraformVersion, model.PartnerID.ValueString(), model.DisableTerraformPartnerID.ValueBool()),
 		DisableCorrelationRequestID: model.DisableCorrelationRequestID.ValueBool(),
 		CustomCorrelationRequestID:  model.CustomCorrelationRequestID.ValueString(),
-		CloudCfg:                    cloud.Configuration{},
+		CloudCfg:                    cloudCfg,
 		TenantId:                    model.TenantID.ValueString(),
 	}
 	client := &clients.Client{}
