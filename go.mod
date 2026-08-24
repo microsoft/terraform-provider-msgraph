@@ -1,6 +1,6 @@
 module github.com/microsoft/terraform-provider-msgraph
 
-go 1.27.0
+go 1.26.5
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.1
