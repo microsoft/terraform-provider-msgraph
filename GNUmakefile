@@ -1,6 +1,9 @@
 TESTTIMEOUT=300m
 TESTARGS?=
 TEST?=$$(go list ./... |grep -v 'vendor'|grep -v 'examples')
+GOLANGCI_LINT_VERSION:=$(shell cat $(CURDIR)/.golangci-lint-version)
+GOLANGCI_LINT_DIR:=$(CURDIR)/bin/golangci-lint/$(GOLANGCI_LINT_VERSION)
+GOLANGCI_LINT:=$(GOLANGCI_LINT_DIR)/golangci-lint
 
 default: testacc
 
@@ -35,7 +38,7 @@ terrafmt:
 docs:
 	go generate
 
-tools:
+tools: $(GOLANGCI_LINT)
 	@echo "==> installing required tooling..."
 	@sh "$(CURDIR)/scripts/gogetcookie.sh"
 	go install github.com/client9/misspell/cmd/misspell@latest
@@ -44,7 +47,11 @@ tools:
 	go install github.com/katbyte/terrafmt@latest
 	go install golang.org/x/tools/cmd/goimports@latest
 	go install mvdan.cc/gofumpt@latest
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH || $$GOPATH)/bin v2.4.0
+
+$(GOLANGCI_LINT): .golangci-lint-version
+	@echo "==> installing golangci-lint $(GOLANGCI_LINT_VERSION)..."
+	@mkdir -p $(GOLANGCI_LINT_DIR)
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
 
 depscheck:
 	@echo "==> Checking source code with go mod tidy..."
@@ -69,6 +76,7 @@ fmtcheck:
 	@sh "$(CURDIR)/scripts/timeouts.sh"
 	@sh "$(CURDIR)/scripts/check-test-package.sh"
 
-lint:
+lint: $(GOLANGCI_LINT)
 	@echo "==> Checking source code against linters..."
-	@if command -v golangci-lint; then (golangci-lint run ./...); else ($(GOPATH)/bin/golangci-lint run ./...); fi
+	@$(GOLANGCI_LINT) --version
+	@$(GOLANGCI_LINT) run ./...

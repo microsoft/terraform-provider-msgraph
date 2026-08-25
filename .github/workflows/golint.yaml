@@ -6,6 +6,7 @@ on:
     paths:
       - '**.go'
       - 'vendor/**'
+      - '.golangci-lint-version'
       - '.github/workflows/**'
 
 jobs:
@@ -20,5 +21,5 @@ jobs:
           go-version-file: 'go.mod'
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: 'v2.13.1'
+          version-file: '.golangci-lint-version'
           args: -v --timeout=20m
