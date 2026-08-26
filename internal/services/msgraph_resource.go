@@ -72,6 +72,7 @@ type MSGraphResourceModel struct {
 	Output                types.Dynamic     `tfsdk:"output"`
 	Timeouts              timeouts.Value    `tfsdk:"timeouts"`
 	UpdateMethod          types.String      `tfsdk:"update_method"`
+	CreateMethod          types.String      `tfsdk:"create_method"`
 }
 
 func (r *MSGraphResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -172,6 +173,14 @@ func (r *MSGraphResource) Schema(ctx context.Context, req resource.SchemaRequest
 				},
 			},
 
+			"create_method": schema.StringAttribute{
+				MarkdownDescription: "The HTTP method to use for creating the resource. Allowed values are `POST` (default) and `PUT`.",
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("POST", "PUT"),
+				},
+			},
+
 			"resource_url": schema.StringAttribute{
 				MarkdownDescription: "The full URL path to this resource instance.",
 				Computed:            true,
@@ -243,7 +252,22 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.CreateQueryParameters)),
 		RetryOptions:    clients.NewRetryOptions(model.Retry),
 	}
-	responseBody, location, err := r.client.Create(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), requestBody, options)
+
+	createMethod := "POST"
+	if !model.CreateMethod.IsNull() {
+		createMethod = model.CreateMethod.ValueString()
+	}
+
+	var (
+		responseBody interface{}
+		location     string
+		err          error
+	)
+	if createMethod == "PUT" {
+		responseBody, err = r.client.Action(ctx, "PUT", model.Url.ValueString(), model.ApiVersion.ValueString(), requestBody, options)
+	} else {
+		responseBody, location, err = r.client.Create(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), requestBody, options)
+	}
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create resource", err.Error())
 		return
@@ -261,6 +285,22 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 				}
 			}
 		}
+	} else if createMethod == "PUT" {
+		// PUT targets the resource URL directly (upsert), so the URL itself
+		// identifies the resource and the response may omit a top-level `id`.
+		putID := ""
+		if responseMap, ok := responseBody.(map[string]interface{}); ok {
+			if id, ok := responseMap["id"].(string); ok {
+				putID = id
+			}
+		}
+		if putID == "" {
+			trimmed := strings.TrimRight(model.Url.ValueString(), "/")
+			putID = trimmed[strings.LastIndex(trimmed, "/")+1:]
+		}
+
+		model.Id = types.StringValue(putID)
+		model.ResourceUrl = model.Url
 	} else {
 		responseId, err := resolveResourceID(responseBody, location)
 		if err != nil {
@@ -286,10 +326,20 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 				clients.NewRetryOptions(model.Retry),
 			),
 		}
-		responseBody, err = r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
+		responseBody, err = r.client.Read(ctx, resourceItemUrl(model), model.ApiVersion.ValueString(), options)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to read data source", err.Error())
 			return
+		}
+
+		// PUT upsert responses may omit a top-level `id` (e.g. 204 No Content), so
+		// prefer the authoritative `id` returned by the read after create.
+		if createMethod == "PUT" {
+			if responseMap, ok := responseBody.(map[string]interface{}); ok {
+				if id, ok := responseMap["id"].(string); ok && id != "" {
+					model.Id = types.StringValue(id)
+				}
+			}
 		}
 	}
 
@@ -331,7 +381,7 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 		updateMethod = model.UpdateMethod.ValueString()
 	}
 	if updateMethod == "PUT" {
-		_, err := r.client.Action(ctx, "PUT", fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), requestBody, options)
+		_, err := r.client.Action(ctx, "PUT", resourceItemUrl(model), model.ApiVersion.ValueString(), requestBody, options)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to update resource", err.Error())
 			return
@@ -352,7 +402,7 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 
 		// If there's something to update, send PATCH
 		if patchBody != nil {
-			_, err := r.client.Update(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), patchBody, options)
+			_, err := r.client.Update(ctx, resourceItemUrl(model), model.ApiVersion.ValueString(), patchBody, options)
 			if err != nil {
 				resp.Diagnostics.AddError("Failed to create resource", err.Error())
 				return
@@ -372,7 +422,7 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
 		RetryOptions:    clients.NewRetryOptions(model.Retry),
 	}
-	responseBody, err := r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
+	responseBody, err := r.client.Read(ctx, resourceItemUrl(model), model.ApiVersion.ValueString(), options)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to read data source", err.Error())
 		return
@@ -453,7 +503,7 @@ func (r *MSGraphResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 
 	options := clients.NewRequestOptions(nil, AsMapOfLists(model.ReadQueryParameters))
-	responseBody, err := r.client.Read(ctx, fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString()), model.ApiVersion.ValueString(), options)
+	responseBody, err := r.client.Read(ctx, resourceItemUrl(model), model.ApiVersion.ValueString(), options)
 	if err != nil {
 		if utils.ResponseErrorWasNotFound(err) {
 			tflog.Info(ctx, fmt.Sprintf("Error reading %q - removing from state", model.Id.ValueString()))
@@ -526,7 +576,7 @@ func (r *MSGraphResource) Delete(ctx context.Context, req resource.DeleteRequest
 	if strings.HasSuffix(model.Url.ValueString(), "/$ref") {
 		itemUrl = strings.ReplaceAll(model.Url.ValueString(), "/$ref", fmt.Sprintf("/%s/$ref", model.Id.ValueString()))
 	} else {
-		itemUrl = fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString())
+		itemUrl = resourceItemUrl(model)
 	}
 
 	options := clients.RequestOptions{
@@ -596,7 +646,7 @@ func ResourceExistenceFunc(client *clients.MSGraphClient, model *MSGraphResource
 			QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
 			RetryOptions:    retryOptions,
 		}
-		itemUrl := fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString())
+		itemUrl := resourceItemUrl(model)
 		_, err := client.Read(ctx, itemUrl, model.ApiVersion.ValueString(), options)
 		if err != nil {
 			if utils.ResponseErrorWasNotFound(err) {
@@ -724,6 +774,16 @@ func resolveResourceID(responseBody interface{}, location string) (string, error
 	}
 
 	return "", errors.New("unable to determine the resource ID: the create response contained no top-level `id` field and no usable `Location` header")
+}
+
+// resourceItemUrl returns the URL that identifies the resource instance. It uses
+// the computed `resource_url` when available, falling back to `url/id` for state
+// created before `resource_url` was introduced.
+func resourceItemUrl(model *MSGraphResourceModel) string {
+	if resourceUrl := model.ResourceUrl.ValueString(); resourceUrl != "" {
+		return resourceUrl
+	}
+	return fmt.Sprintf("%s/%s", model.Url.ValueString(), model.Id.ValueString())
 }
 
 func (r *MSGraphResource) MoveState(ctx context.Context) []resource.StateMover {

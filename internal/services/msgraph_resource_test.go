@@ -3,6 +3,7 @@ package services_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -262,6 +263,27 @@ func TestAcc_ResourceWithPutUpdateMethod(t *testing.T) {
 	})
 }
 
+func TestAcc_ResourceWithPutCreateMethod(t *testing.T) {
+	partnerTenantID := os.Getenv("ARM_PARTNER_TENANT_ID")
+	if partnerTenantID == "" {
+		t.Skip("Skipping as `ARM_PARTNER_TENANT_ID` is not specified")
+	}
+
+	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
+
+	r := MSGraphTestResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.createMethod(partnerTenantID),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				check.That(data.ResourceName).Key("resource_url").MatchesRegex(regexp.MustCompile(`^policies/crossTenantAccessPolicy/partners/[a-f0-9\-]+/identitySynchronization$`)),
+			),
+		},
+	})
+}
+
 func TestAcc_ResourceFederatedIdentityCredentialClaimsExpression(t *testing.T) {
 	data := acceptance.BuildTestData(t, "msgraph_resource", "test")
 
@@ -356,7 +378,10 @@ func (r MSGraphTestResource) Exists(ctx context.Context, client *clients.Client,
 		return &found, nil
 	}
 
-	checkUrl := fmt.Sprintf("%s/%s", url, state.ID)
+	checkUrl := state.Attributes["resource_url"]
+	if checkUrl == "" {
+		checkUrl = fmt.Sprintf("%s/%s", url, state.ID)
+	}
 	_, err := client.MSGraphClient.Read(ctx, checkUrl, apiVersion, clients.DefaultRequestOptions())
 	if err == nil {
 		b := true
@@ -668,6 +693,26 @@ resource "msgraph_resource" "test" {
   }
 }
 `, displayName)
+}
+
+func (r MSGraphTestResource) createMethod(partnerTenantID string) string {
+	return fmt.Sprintf(`
+resource "msgraph_resource" "partner" {
+  url = "policies/crossTenantAccessPolicy/partners"
+  body = {
+    tenantId = %[1]q
+  }
+}
+
+resource "msgraph_resource" "test" {
+  url           = "policies/crossTenantAccessPolicy/partners/${msgraph_resource.partner.id}/identitySynchronization"
+  create_method = "PUT"
+  body = {
+    displayName     = "My Sync"
+    userSyncInbound = { isSyncAllowed = true }
+  }
+}
+`, partnerTenantID)
 }
 
 func (r MSGraphTestResource) federatedIdentityCredentialClaimsExpression(value string) string {

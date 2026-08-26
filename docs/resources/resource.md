@@ -71,6 +71,7 @@ This resource can manage any Microsoft Graph API resource.
 
 - `api_version` (String) The API version of the data source. The allowed values are `v1.0` and `beta`. Defaults to `v1.0`.
 - `body` (Dynamic) A dynamic attribute that contains the request body.
+- `create_method` (String) The HTTP method to use for creating the resource. Allowed values are `POST` (default) and `PUT`.
 - `create_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the create request.
 - `delete_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the delete request.
 - `ignore_missing_property` (Boolean) Whether ignore not returned properties like credentials in `body` to suppress plan-diff. Defaults to `true`. It's recommend to enable this option when some sensitive properties are not returned in response body, instead of setting them in `lifecycle.ignore_changes` because it will make the sensitive fields unable to update.
