@@ -7,8 +7,7 @@ DEPENDENCIES:
 - Updated `github.com/Azure/azure-sdk-for-go/sdk/azcore` from v1.21.1 to v1.22.0
 - Updated `github.com/Azure/azure-sdk-for-go/sdk/azidentity` from v1.13.1 to v1.14.0
 - Updated `github.com/hashicorp/terraform-plugin-log` from v0.10.0 to v0.11.0
-- Updated `google.golang.org/grpc` from v1.79.3 to v1.82.1
-- Updated Go from 1.25.8 to 1.26.5. ([#145](https://github.com/microsoft/terraform-provider-msgraph/pull/145))
+- Updated Go from 1.25.8 to 1.26.5.
 
 BUG FIXES:
 - `msgraph_resource_collection`: Fixed a "Provider produced inconsistent final plan" error on `reference_ids` that occurred when only some referenced resources were updated in the same apply (a mix of known and known-after-apply values). Because a `/$ref` collection is unordered, reads now preserve the ordering already recorded in state, keeping the stored order aligned with the configured order so pinned positions no longer shift between plan and apply. ([#135](https://github.com/microsoft/terraform-provider-msgraph/issues/135))
