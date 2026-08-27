@@ -329,7 +329,7 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 		responseBody, err = r.client.Read(ctx, resourceItemUrl(model), model.ApiVersion.ValueString(), options)
 		if err != nil {
-			resp.Diagnostics.AddError("Failed to read data source", err.Error())
+			resp.Diagnostics.AddError("Failed to read resource", err.Error())
 			return
 		}
 
@@ -405,7 +405,7 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 		if patchBody != nil {
 			_, err := r.client.Update(ctx, resourceItemUrl(model), model.ApiVersion.ValueString(), patchBody, options)
 			if err != nil {
-				resp.Diagnostics.AddError("Failed to create resource", err.Error())
+				resp.Diagnostics.AddError("Failed to update resource", err.Error())
 				return
 			}
 		} else {
@@ -425,7 +425,7 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 	responseBody, err := r.client.Read(ctx, resourceItemUrl(model), model.ApiVersion.ValueString(), options)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to read data source", err.Error())
+		resp.Diagnostics.AddError("Failed to read resource", err.Error())
 		return
 	}
 	model.Output = types.DynamicValue(buildOutputFromBody(responseBody, model.ResponseExportValues))
