@@ -273,7 +273,8 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	if isRelationship { // extract the id from the response body
+	switch {
+	case isRelationship: // extract the id from the response body
 		if requestMap, ok := requestBody.(map[string]interface{}); ok {
 			if idValue, ok := requestMap["@odata.id"]; ok {
 				if idString, ok := idValue.(string); ok {
@@ -285,7 +286,7 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 				}
 			}
 		}
-	} else if createMethod == "PUT" {
+	case createMethod == "PUT":
 		// PUT targets the resource URL directly (upsert), so the URL itself
 		// identifies the resource and the response may omit a top-level `id`.
 		putID := ""
@@ -301,7 +302,7 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 
 		model.Id = types.StringValue(putID)
 		model.ResourceUrl = model.Url
-	} else {
+	default:
 		responseId, err := resolveResourceID(responseBody, location)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to determine resource ID", err.Error())
