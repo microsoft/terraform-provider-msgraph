@@ -8,7 +8,6 @@ DEPENDENCIES:
 - Updated `github.com/Azure/azure-sdk-for-go/sdk/azidentity` from v1.13.1 to v1.14.0
 - Updated `github.com/hashicorp/terraform-plugin-log` from v0.10.0 to v0.11.0
 - Updated `google.golang.org/grpc` from v1.79.3 to v1.82.1
-- Updated dependencies to address critical security vulnerabilities. ([#122](https://github.com/microsoft/terraform-provider-msgraph/pull/122))
 - Updated Go from 1.25.8 to 1.26.5. ([#145](https://github.com/microsoft/terraform-provider-msgraph/pull/145))
 
 BUG FIXES:
