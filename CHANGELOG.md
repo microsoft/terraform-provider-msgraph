@@ -2,6 +2,7 @@
 
 ENHANCEMENTS:
 - Added sovereign cloud support via optional `environment` (`ARM_ENVIRONMENT`) for `public/global`, `usgovernment/usgovernmentl4`, `usgovernmentl5/dod`, and `china`, including cloud-based Graph endpoint/token-scope resolution and `@odata.id` relationship URLs.
+- `msgraph_resource`: Added a `create_method` attribute (`POST` default, or `PUT`) to support Graph resources that are created via `PUT` on the resource URL.
 
 BUG FIXES:
 - `msgraph_resource_collection`: Fixed a "Provider produced inconsistent final plan" error on `reference_ids` that occurred when only some referenced resources were updated in the same apply (a mix of known and known-after-apply values). Because a `/$ref` collection is unordered, reads now preserve the ordering already recorded in state, keeping the stored order aligned with the configured order so pinned positions no longer shift between plan and apply. ([#135](https://github.com/microsoft/terraform-provider-msgraph/issues/135))
