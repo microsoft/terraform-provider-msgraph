@@ -5,9 +5,10 @@ ENHANCEMENTS:
 - `msgraph_resource`: Added a `create_method` attribute (`POST` default, or `PUT`) to support Graph resources that are created via `PUT` on the resource URL.
 
 DEPENDENCIES:
-- Updated `github.com/Azure/azure-sdk-for-go/sdk/azcore` from v1.21.1 to v1.22.0
+- Updated `github.com/Azure/azure-sdk-for-go/sdk/azcore` from v1.21.1 to v1.23.0.
 - Updated `github.com/Azure/azure-sdk-for-go/sdk/azidentity` from v1.13.1 to v1.14.0
 - Updated `github.com/hashicorp/terraform-plugin-log` from v0.10.0 to v0.11.0
+- Updated `github.com/stretchr/testify` from v1.11.1 to v1.12.1.
 - Updated Go from 1.25.8 to 1.26.5.
 
 BUG FIXES:
