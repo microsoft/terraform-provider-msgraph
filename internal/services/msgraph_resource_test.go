@@ -264,9 +264,9 @@ func TestAcc_ResourceWithPutUpdateMethod(t *testing.T) {
 }
 
 func TestAcc_ResourceWithPutCreateMethod(t *testing.T) {
-	partnerTenantID := os.Getenv("ARM_PARTNER_TENANT_ID")
+	partnerTenantID := os.Getenv("ARM_CROSS_TENANT_ACCESS_POLICY_PARTNER_TENANT_ID")
 	if partnerTenantID == "" {
-		t.Skip("Skipping as `ARM_PARTNER_TENANT_ID` is not specified")
+		t.Skip("Skipping as `ARM_CROSS_TENANT_ACCESS_POLICY_PARTNER_TENANT_ID` is not specified")
 	}
 
 	data := acceptance.BuildTestData(t, "msgraph_resource", "test")

@@ -258,16 +258,7 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 		createMethod = model.CreateMethod.ValueString()
 	}
 
-	var (
-		responseBody interface{}
-		location     string
-		err          error
-	)
-	if createMethod == "PUT" {
-		responseBody, err = r.client.Action(ctx, "PUT", model.Url.ValueString(), model.ApiVersion.ValueString(), requestBody, options)
-	} else {
-		responseBody, location, err = r.client.Create(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), requestBody, options)
-	}
+	responseBody, location, err := r.client.Create(ctx, createMethod, model.Url.ValueString(), model.ApiVersion.ValueString(), requestBody, options)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create resource", err.Error())
 		return

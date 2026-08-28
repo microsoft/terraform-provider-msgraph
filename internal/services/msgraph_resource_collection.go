@@ -319,7 +319,7 @@ func (r *MSGraphResourceCollection) applyCollection(ctx context.Context, model *
 	for _, item := range toAdd {
 		body := map[string]string{}
 		body["@odata.id"] = fmt.Sprintf("%s/%s/directoryObjects/%s", r.client.GraphBaseUrl(), model.ApiVersion.ValueString(), item)
-		_, _, err := r.client.Create(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), body, clients.RequestOptions{RetryOptions: clients.NewRetryOptions(model.Retry)})
+		_, _, err := r.client.Create(ctx, "", model.Url.ValueString(), model.ApiVersion.ValueString(), body, clients.RequestOptions{RetryOptions: clients.NewRetryOptions(model.Retry)})
 		if err != nil {
 			errs = append(errs, err)
 		}
