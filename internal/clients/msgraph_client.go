@@ -220,11 +220,14 @@ func (client *MSGraphClient) List(ctx context.Context, url string, apiVersion st
 	return out, nil
 }
 
-func (client *MSGraphClient) Create(ctx context.Context, url string, apiVersion string, body interface{}, options RequestOptions) (interface{}, string, error) {
+func (client *MSGraphClient) Create(ctx context.Context, method string, url string, apiVersion string, body interface{}, options RequestOptions) (interface{}, string, error) {
 	if options.RetryOptions != nil {
 		ctx = policy.WithRetryOptions(ctx, *options.RetryOptions)
 	}
-	req, err := runtime.NewRequest(ctx, http.MethodPost, runtime.JoinPaths(client.host, apiVersion, url))
+	if method == "" {
+		method = http.MethodPost
+	}
+	req, err := runtime.NewRequest(ctx, method, runtime.JoinPaths(client.host, apiVersion, url))
 	if err != nil {
 		return nil, "", err
 	}

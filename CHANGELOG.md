@@ -2,6 +2,7 @@
 
 ENHANCEMENTS:
 - Added sovereign cloud support via optional `environment` (`ARM_ENVIRONMENT`) for `public/global`, `usgovernment/usgovernmentl4`, `usgovernmentl5/dod`, and `china`, including cloud-based Graph endpoint/token-scope resolution and `@odata.id` relationship URLs. ([#147](https://github.com/microsoft/terraform-provider-msgraph/pull/147))
+- `msgraph_resource`: Added a `create_method` attribute (`POST` default, or `PUT`) to support Graph resources that are created via `PUT` on the resource URL.
 
 DEPENDENCIES:
 - Updated `github.com/Azure/azure-sdk-for-go/sdk/azcore` from v1.21.1 to v1.22.0
