@@ -4,3 +4,12 @@ terraform import msgraph_resource.member /groups/group-id/members/$ref/00000000-
 
 # For resources that use the beta API, append ?api-version=beta to the import ID:
 terraform import msgraph_resource.settings '/settings/00000000-0000-0000-0000-000000000000?api-version=beta'
+
+# Import with specific properties to manage (recommended for existing resources)
+terraform import msgraph_resource.group "/groups/00000000-0000-0000-0000-000000000000?importProperties=displayName,mailEnabled,mailNickname,securityEnabled"
+
+# Import with API version
+terraform import msgraph_resource.example "/groups/00000000-0000-0000-0000-000000000000?api-version=beta"
+
+# Combine multiple parameters
+terraform import msgraph_resource.example "/groups/00000000-0000-0000-0000-000000000000?api-version=v1.0&importProperties=displayName,mailEnabled"
