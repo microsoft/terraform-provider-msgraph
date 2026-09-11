@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
@@ -656,7 +657,7 @@ func ResourceExistenceFunc(client *clients.MSGraphClient, model *MSGraphResource
 		itemUrl := resourceItemUrl(model)
 		_, err := client.Read(ctx, itemUrl, model.ApiVersion.ValueString(), options)
 		if err != nil {
-			if utils.ResponseErrorWasNotFound(err) || (readAfterDelete && utils.ResponseErrorWasStatusCode(err, 403)) {
+			if utils.ResponseErrorWasNotFound(err) || (readAfterDelete && utils.ResponseErrorWasStatusCode(err, http.StatusForbidden)) {
 				b := false
 				return &b, nil
 			}
