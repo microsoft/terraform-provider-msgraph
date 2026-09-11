@@ -325,7 +325,7 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	// Wait for the resource to be available
-	if err = consistency.WaitForUpdate(ctx, ResourceExistenceFunc(r.client, model, true)); err != nil {
+	if err = consistency.WaitForUpdate(ctx, ResourceExistenceFunc(r.client, model, true, false)); err != nil {
 		resp.Diagnostics.AddError("Error", fmt.Sprintf("waiting for creation of %s: %v", model.Url.ValueString(), err))
 		return
 	}
@@ -432,7 +432,7 @@ func (r *MSGraphResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Wait for the resource to be available
-	if err := consistency.WaitForUpdate(ctx, ResourceExistenceFunc(r.client, model, false)); err != nil {
+	if err := consistency.WaitForUpdate(ctx, ResourceExistenceFunc(r.client, model, false, false)); err != nil {
 		resp.Diagnostics.AddError("Error", fmt.Sprintf("waiting for update of %s: %v", model.Url.ValueString(), err))
 		return
 	}
@@ -603,12 +603,12 @@ func (r *MSGraphResource) Delete(ctx context.Context, req resource.DeleteRequest
 	}
 
 	// Wait for deletion to complete
-	if err = consistency.WaitForDeletion(ctx, ResourceExistenceFunc(r.client, model, false)); err != nil {
+	if err = consistency.WaitForDeletion(ctx, ResourceExistenceFunc(r.client, model, false, true)); err != nil {
 		resp.Diagnostics.AddError("Error waiting for deletion", err.Error())
 	}
 }
 
-func ResourceExistenceFunc(client *clients.MSGraphClient, model *MSGraphResourceModel, readAfterCreate bool) consistency.ChangeFunc {
+func ResourceExistenceFunc(client *clients.MSGraphClient, model *MSGraphResourceModel, readAfterCreate, readAfterDelete bool) consistency.ChangeFunc {
 	return func(ctx context.Context) (*bool, error) {
 		if model == nil {
 			return nil, fmt.Errorf("model is nil")
@@ -656,7 +656,7 @@ func ResourceExistenceFunc(client *clients.MSGraphClient, model *MSGraphResource
 		itemUrl := resourceItemUrl(model)
 		_, err := client.Read(ctx, itemUrl, model.ApiVersion.ValueString(), options)
 		if err != nil {
-			if utils.ResponseErrorWasNotFound(err) {
+			if utils.ResponseErrorWasNotFound(err) || (readAfterDelete && utils.ResponseErrorWasStatusCode(err, 403)) {
 				b := false
 				return &b, nil
 			}
