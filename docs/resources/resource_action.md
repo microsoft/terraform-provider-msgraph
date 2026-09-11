@@ -162,6 +162,7 @@ This resource can perform any Microsoft Graph API action. Use this for operation
 To learn more about JMESPath, visit [JMESPath](https://jmespath.org/).
 - `retry` (Attributes) The retry object supports the following attributes: (see [below for nested schema](#nestedatt--retry))
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `when` (String) When to perform the action. `create` (the default) executes it when the resource is created or updated. `destroy` executes it only when the resource is destroyed, and never on create or update - useful for endpoints that only support a single write operation and can't be read back to track state (for example a `$ref` relationship that only documents `PUT`), where an ordinary resource can't safely manage both directions of the relationship.
 
 ### Read-Only
 

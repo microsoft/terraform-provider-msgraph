@@ -1,3 +1,8 @@
+## Unreleased
+
+ENHANCEMENTS:
+- `msgraph_resource_action`: Added a `when` attribute (`create` default, or `destroy`) so the action can be fired only when the resource is destroyed instead of when it's created/updated. Useful for endpoints that only support a single write operation and can't be read back to track state, such as `$ref` relationships that only document `PUT`. ([#157](https://github.com/microsoft/terraform-provider-msgraph/issues/157))
+
 ## 0.5.0
 
 ENHANCEMENTS:
