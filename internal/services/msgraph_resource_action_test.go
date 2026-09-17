@@ -67,6 +67,24 @@ func TestAcc_ResourceActionWithExportValues(t *testing.T) {
 	})
 }
 
+func TestAcc_ResourceActionWhenDestroy(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource_action", "test")
+
+	r := MSGraphResourceActionTestResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			// A when = "destroy" action must not fire on create: output stays empty
+			// even though response_export_values asks for a field.
+			Config: r.whenDestroy(),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Key("when").HasValue("destroy"),
+				check.That(data.ResourceName).Key("output.%").HasValue("0"),
+			),
+		},
+	})
+}
+
 func (r MSGraphResourceActionTestResource) Exists(ctx context.Context, clients *clients.Client, state *terraform.InstanceState) (*bool, error) {
 	exists := false
 	return &exists, nil
@@ -197,6 +215,40 @@ resource "msgraph_resource_action" "test" {
   response_export_values = {
     group_id   = "id"
     group_name = "displayName"
+  }
+}
+`
+}
+
+func (r MSGraphResourceActionTestResource) whenDestroy() string {
+	return `
+provider "msgraph" {}
+
+resource "msgraph_resource" "group" {
+  url = "groups"
+  body = {
+    displayName     = "Test Group"
+    mailEnabled     = false
+    mailNickname    = "mygroup"
+    securityEnabled = true
+  }
+
+  lifecycle {
+    ignore_changes = [body.displayName]
+  }
+}
+
+resource "msgraph_resource_action" "test" {
+  resource_url = msgraph_resource.group.resource_url
+  method       = "PATCH"
+  when         = "destroy"
+
+  body = {
+    displayName = "Group Name Restored On Destroy"
+  }
+
+  response_export_values = {
+    group_id = "id"
   }
 }
 `
