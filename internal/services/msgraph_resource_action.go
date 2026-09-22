@@ -205,8 +205,11 @@ func (r *MSGraphResourceAction) Create(ctx context.Context, req resource.CreateR
 	model.Id = types.StringValue(fullUrl)
 
 	if model.When.ValueString() == "destroy" {
-		// The action only runs on destroy, so there's nothing to execute yet.
-		model.Output = types.DynamicValue(buildOutputFromBody(nil, model.ResponseExportValues))
+		// The action only runs on destroy, so there's nothing to execute yet. Pass no
+		// export paths: buildOutputFromBody(nil, paths) would otherwise still emit a
+		// null-valued key per configured path, since a JMES search against a nil body
+		// returns (nil, nil) rather than an error.
+		model.Output = types.DynamicValue(buildOutputFromBody(nil, nil))
 		resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 		return
 	}
@@ -293,6 +296,12 @@ func (r *MSGraphResourceAction) Read(ctx context.Context, req resource.ReadReque
 
 	// For action resources, read is essentially a no-op since actions are one-time operations
 	// We'll just maintain the current state
+	if model.When.IsNull() {
+		// State from before the `when` attribute existed has no value here; default it to
+		// "apply" so it doesn't show as a `null -> "apply"` diff that RequiresReplace() turns
+		// into a resource replacement, re-running potentially non-idempotent actions.
+		model.When = types.StringValue("apply")
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
 
