@@ -162,6 +162,7 @@ This resource can perform any Microsoft Graph API action. Use this for operation
 To learn more about JMESPath, visit [JMESPath](https://jmespath.org/).
 - `retry` (Attributes) The retry object supports the following attributes: (see [below for nested schema](#nestedatt--retry))
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `when` (String) When to perform the action. `apply` (the default) executes it when the resource is created or updated. `destroy` executes it only when the resource is destroyed, and never on create or update - useful for endpoints that only support a single write operation and can't be read back to track state (for example a `$ref` relationship that only documents `PUT`), where an ordinary resource can't safely manage both directions of the relationship.
 
 ### Read-Only
 
@@ -194,5 +195,6 @@ Required:
 Optional:
 
 - `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 
 
