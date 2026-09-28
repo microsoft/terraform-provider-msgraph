@@ -1,7 +1,14 @@
-## Unreleased
+## 0.6.0
 
 ENHANCEMENTS:
 - `msgraph_resource_action`: Added a `when` attribute (`apply` default, or `destroy`) so the action can be fired only when the resource is destroyed instead of when it's created/updated. Useful for endpoints that only support a single write operation and can't be read back to track state, such as `$ref` relationships that only document `PUT`. ([#157](https://github.com/microsoft/terraform-provider-msgraph/issues/157))
+- `msgraph_resource_collection`: Added a `collection_type` attribute to support `$ref` collections whose members are not `directoryObjects`. Imports can set the collection type with the `collection-type` query parameter. ([#162](https://github.com/microsoft/terraform-provider-msgraph/pull/162))
+
+DEPENDENCIES:
+- Updated `github.com/Azure/azure-sdk-for-go/sdk/azcore` from v1.23.0 to v1.23.1.
+- Updated `github.com/Azure/azure-sdk-for-go/sdk/azidentity` from v1.14.0 to v1.14.1.
+- Updated `github.com/hashicorp/go-uuid` from v1.0.3 to v1.0.4.
+- Updated `google.golang.org/grpc` from v1.82.1 to v1.83.2.
 
 ## 0.5.0
 
