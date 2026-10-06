@@ -3,7 +3,7 @@ module github.com/microsoft/terraform-provider-msgraph
 go 1.26.5
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.1
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.2
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-uuid v1.0.4
