@@ -90,7 +90,7 @@ func (client *MSGraphClient) Read(ctx context.Context, url string, apiVersion st
 	// if response has nextLink, follow the link and return the final response
 	if responseBodyMap, ok := responseBody.(map[string]interface{}); ok {
 		if nextLink := responseBodyMap["@odata.nextLink"]; nextLink != nil {
-			return client.List(ctx, url, apiVersion, options)
+			return client.list(ctx, url, apiVersion, options, responseBody)
 		}
 	}
 
@@ -125,6 +125,12 @@ func (client *MSGraphClient) ListRefIDs(ctx context.Context, url string, apiVers
 }
 
 func (client *MSGraphClient) List(ctx context.Context, url string, apiVersion string, options RequestOptions) (interface{}, error) {
+	return client.list(ctx, url, apiVersion, options, nil)
+}
+
+// list can continue a response already fetched by Read without requesting the
+// first page twice. Continuation URLs are used verbatim, including their queries.
+func (client *MSGraphClient) list(ctx context.Context, url string, apiVersion string, options RequestOptions, firstPage interface{}) (interface{}, error) {
 	pager := runtime.NewPager(runtime.PagingHandler[interface{}]{
 		More: func(current interface{}) bool {
 			if current == nil {
@@ -143,6 +149,9 @@ func (client *MSGraphClient) List(ctx context.Context, url string, apiVersion st
 			return true
 		},
 		Fetcher: func(ctx context.Context, current *interface{}) (interface{}, error) {
+			if current == nil && firstPage != nil {
+				return firstPage, nil
+			}
 			if options.RetryOptions != nil {
 				ctx = policy.WithRetryOptions(ctx, *options.RetryOptions)
 			}
@@ -157,9 +166,6 @@ func (client *MSGraphClient) List(ctx context.Context, url string, apiVersion st
 					reqQP.Set(key, value)
 				}
 				req.Raw().URL.RawQuery = reqQP.Encode()
-				for key, value := range options.Headers {
-					req.Raw().Header.Set(key, value)
-				}
 				request = req
 			} else {
 				nextLink := ""
@@ -171,6 +177,9 @@ func (client *MSGraphClient) List(ctx context.Context, url string, apiVersion st
 					return nil, err
 				}
 				request = req
+			}
+			for key, value := range options.Headers {
+				request.Raw().Header.Set(key, value)
 			}
 			request.Raw().Header.Set("Accept", "application/json")
 			resp, err := client.pl.Do(request)
@@ -200,13 +209,16 @@ func (client *MSGraphClient) List(ctx context.Context, url string, apiVersion st
 			if pageMap["value"] != nil {
 				if pageValue, ok := pageMap["value"].([]interface{}); ok {
 					value = append(value, pageValue...)
+					// Retain collection metadata, including a final delta link.
+					// When repeated, the first page's value is authoritative.
+					for key, val := range pageMap {
+						if key != nextLinkKey && key != "value" {
+							if _, exists := out[key]; !exists {
+								out[key] = val
+							}
+						}
+					}
 					continue
-				}
-			}
-			// copy all fields except for nextLinkKey and value
-			for key, val := range pageMap {
-				if key != nextLinkKey && key != "value" {
-					out[key] = val
 				}
 			}
 		}
