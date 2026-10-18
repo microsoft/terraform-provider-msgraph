@@ -67,6 +67,8 @@ This resource can manage any Microsoft Graph API resource.
   More information about the Microsoft Graph API can be found at [Microsoft Graph API](https://docs.microsoft.com/en-us/graph/overview).  
   And there are some [examples](https://github.com/microsoft/terraform-provider-msgraph/tree/main/examples/quickstarts) to help you get started.
 
+Changing this forces a new resource to be created.
+
 ### Optional
 
 - `api_version` (String) The API version of the data source. The allowed values are `v1.0` and `beta`. Defaults to `v1.0`.
