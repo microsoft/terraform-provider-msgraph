@@ -38,44 +38,6 @@ stages:
           - bash: |
               #!/usr/bin/env bash
               set -euo pipefail
-              restore_dir="$(Agent.TempDirectory)/terraform-provider-restore"
-              mirror_dir="$(Pipeline.Workspace)/terraform-provider-mirror"
-              cli_config="$(Pipeline.Workspace)/terraform-acctest.tfrc"
-              mkdir -p "${restore_dir}" "${mirror_dir}"
-
-              cat > "${restore_dir}/main.tf" <<'EOF'
-              terraform {
-                required_providers {
-                  azuread = {
-                    source = "hashicorp/azuread"
-                    # Keep aligned with externalProvidersAzureAD() in the move-state tests.
-                    version = "3.3.0"
-                  }
-                }
-              }
-              EOF
-
-              terraform -chdir="${restore_dir}" providers mirror "${mirror_dir}"
-
-              cat > "${cli_config}" <<EOF
-              provider_installation {
-                filesystem_mirror {
-                  path    = "${mirror_dir}"
-                  include = ["registry.terraform.io/hashicorp/azuread"]
-                }
-                direct {
-                  exclude = ["registry.terraform.io/hashicorp/azuread"]
-                }
-              }
-              EOF
-              echo "##vso[task.setvariable variable=TF_CLI_CONFIG_FILE]${cli_config}"
-            displayName: "Restore AzureAD provider for acceptance tests"
-            env:
-              ob_restore_phase: true
-
-          - bash: |
-              #!/usr/bin/env bash
-              set -euo pipefail
               terraform_path="$(which terraform)"
               echo "Terraform installed at: ${terraform_path}"
               echo "Overriding terraform CLI for acctest to workaround the error: 'cannot run Terraform provider tests: failed to find or install Terraform CLI from [0xc000130100 0xc000154000]: unable to verify checksums signature: openpgp: key expired'"

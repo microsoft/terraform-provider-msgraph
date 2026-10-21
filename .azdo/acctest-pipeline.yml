@@ -23,6 +23,8 @@ extends:
       golang:
         internalModuleProxy:
           enabled: true
+      networkisolation:
+          policy: Permissive
 
     stages:
       - template: /.azdo/ci.yml@self
