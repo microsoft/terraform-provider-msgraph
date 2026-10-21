@@ -24,7 +24,7 @@ extends:
         internalModuleProxy:
           enabled: true
       networkisolation:
-          policy: Permissive
+          policy: TerraformRegistry
 
     stages:
       - template: /.azdo/ci.yml@self

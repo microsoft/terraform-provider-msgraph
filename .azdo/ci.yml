@@ -84,5 +84,4 @@ stages:
               ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
               ARM_TENANT_ID: $(ARM_TENANT_ID)
               TF_ACC_TERRAFORM_PATH: $(TF_ACC_TERRAFORM_PATH)
-              TF_CLI_CONFIG_FILE: $(TF_CLI_CONFIG_FILE)
               TESTARGS: $(TESTARGS)
