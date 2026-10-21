@@ -23,8 +23,6 @@ extends:
       golang:
         internalModuleProxy:
           enabled: true
-      networkisolation:
-          policy: TerraformRegistry
 
     stages:
       - template: /.azdo/ci.yml@self
