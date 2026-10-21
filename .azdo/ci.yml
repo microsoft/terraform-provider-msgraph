@@ -38,6 +38,50 @@ stages:
           - bash: |
               #!/usr/bin/env bash
               set -euo pipefail
+              # Keep the version aligned with externalProvidersAzureAD() in the move-state tests.
+              provider_version="3.3.0"
+              provider_commit="95ff3b19099033d147dae1d458a0ba2cd6d01216"
+              source_dir="$(Agent.TempDirectory)/terraform-provider-azuread-source"
+              mirror_dir="$(Pipeline.Workspace)/terraform-provider-mirror"
+              provider_dir="${mirror_dir}/registry.terraform.io/hashicorp/azuread/${provider_version}/linux_amd64"
+              cli_config="$(Pipeline.Workspace)/terraform-acctest.tfrc"
+
+              git clone --depth 1 --single-branch --branch "v${provider_version}" \
+                https://github.com/hashicorp/terraform-provider-azuread.git "${source_dir}"
+              actual_commit="$(git -C "${source_dir}" rev-parse HEAD)"
+              if [[ "${actual_commit}" != "${provider_commit}" ]]; then
+                echo "AzureAD source revision mismatch: expected ${provider_commit}, got ${actual_commit}" >&2
+                exit 1
+              fi
+
+              mkdir -p "${provider_dir}"
+              (
+                cd "${source_dir}"
+                GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GOTOOLCHAIN=local \
+                  go build -mod=vendor -trimpath \
+                    -ldflags="-X=github.com/hashicorp/terraform-provider-azuread/version.ProviderVersion=${provider_version}" \
+                    -o "${provider_dir}/terraform-provider-azuread_v${provider_version}" .
+              )
+
+              cat > "${cli_config}" <<EOF
+              provider_installation {
+                filesystem_mirror {
+                  path    = "${mirror_dir}"
+                  include = ["registry.terraform.io/hashicorp/azuread"]
+                }
+                direct {
+                  exclude = ["registry.terraform.io/hashicorp/azuread"]
+                }
+              }
+              EOF
+              echo "##vso[task.setvariable variable=TF_CLI_CONFIG_FILE]${cli_config}"
+            displayName: "Build AzureAD provider from pinned source"
+            env:
+              ob_restore_phase: true
+
+          - bash: |
+              #!/usr/bin/env bash
+              set -euo pipefail
               terraform_path="$(which terraform)"
               echo "Terraform installed at: ${terraform_path}"
               echo "Overriding terraform CLI for acctest to workaround the error: 'cannot run Terraform provider tests: failed to find or install Terraform CLI from [0xc000130100 0xc000154000]: unable to verify checksums signature: openpgp: key expired'"
@@ -84,4 +128,5 @@ stages:
               ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
               ARM_TENANT_ID: $(ARM_TENANT_ID)
               TF_ACC_TERRAFORM_PATH: $(TF_ACC_TERRAFORM_PATH)
+              TF_CLI_CONFIG_FILE: $(TF_CLI_CONFIG_FILE)
               TESTARGS: $(TESTARGS)
