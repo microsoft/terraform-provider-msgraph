@@ -2,27 +2,13 @@ trigger:
   branches:
     include:
       - with-acctests/**
-      - dependabot/**
+      # Exclude dependabot/**: dependency updates may contain malicious code.
+      # Require human review before running acceptance tests with Azure test credentials.
+      # An internal Go proxy migration was investigated, but its required network-isolation
+      # policy blocks Terraform Registry, preventing AzureAD provider installation
+      # and causing acceptance tests that depend on AzureAD to fail.
 
 pr: none
 
-variables:
-  LinuxContainerImage: mcr.microsoft.com/onebranch/azurelinux/build:3.0
-
-resources:
-  repositories:
-    - repository: templates
-      type: git
-      name: OneBranch.Pipelines/GovernedTemplates
-      ref: refs/heads/main
-
 extends:
-  template: v2/OneBranch.NonOfficial.CrossPlat.yml@templates
-  parameters:
-    featureFlags:
-      golang:
-        internalModuleProxy:
-          enabled: true
-
-    stages:
-      - template: /.azdo/ci.yml@self
+  template: ci.yml
