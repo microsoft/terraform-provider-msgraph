@@ -680,6 +680,34 @@ func (r *MSGraphResource) ImportState(ctx context.Context, req resource.ImportSt
 		apiVersion = parsedUrl.Query().Get("api-version")
 	}
 
+	// This lets users import specific fields into state so Read() can populate them.
+	// Example: /groups/<id>?importProperties=displayName,mailEnabled
+	importBody := types.DynamicNull()
+	if raw := parsedUrl.Query().Get("importProperties"); raw != "" {
+		properties := strings.Split(raw, ",")
+		seed := make(map[string]interface{})
+		for _, p := range properties {
+			p = strings.TrimSpace(p)
+			if p == "" {
+				continue
+			}
+			addNullProperty(seed, p)
+		}
+		if len(seed) > 0 {
+			data, err := json.Marshal(seed)
+			if err != nil {
+				resp.Diagnostics.AddError("Invalid importProperties", err.Error())
+				return
+			}
+			payload, err := dynamic.FromJSONImplied(data)
+			if err != nil {
+				resp.Diagnostics.AddError("Invalid importProperties", err.Error())
+				return
+			}
+			importBody = payload
+		}
+	}
+
 	if strings.HasSuffix(parsedUrl.Path, "/$ref") {
 		reqIdWithoutRef := strings.TrimSuffix(parsedUrl.Path, "/$ref")
 		lastIndex := strings.LastIndex(reqIdWithoutRef, "/")
@@ -723,6 +751,7 @@ func (r *MSGraphResource) ImportState(ctx context.Context, req resource.ImportSt
 		ResourceUrl:           types.StringValue(resourceUrl),
 		Url:                   types.StringValue(urlValue),
 		ApiVersion:            types.StringValue(apiVersion),
+		Body:                  importBody,
 		IgnoreMissingProperty: types.BoolValue(true),
 		CreateQueryParameters: types.MapNull(types.ListType{ElemType: types.StringType}),
 		UpdateQueryParameters: types.MapNull(types.ListType{ElemType: types.StringType}),
@@ -774,6 +803,42 @@ func relationshipRefObjectID(body types.Dynamic) string {
 		return ""
 	}
 	return utils.LastSegment(odataID)
+}
+
+// addNullProperty seeds propertyPath in root with a null leaf, expanding a
+// dotted path such as "web.redirectUris" into nested objects.
+//
+// When a property and one of its children are both requested, the more specific
+// path wins regardless of the order they were given in, so that
+// "web,web.redirectUris" and "web.redirectUris,web" seed the same body.
+func addNullProperty(root map[string]interface{}, propertyPath string) {
+	parts := strings.Split(propertyPath, ".")
+
+	// Validate up front so a malformed path leaves no partially built objects.
+	for _, part := range parts {
+		if part == "" {
+			return
+		}
+	}
+
+	current := root
+	for i, part := range parts {
+		if i == len(parts)-1 {
+			// A nested path already claimed this property; keep the more
+			// specific value rather than flattening it back to null.
+			if _, isObject := current[part].(map[string]interface{}); isObject {
+				return
+			}
+			current[part] = nil
+			return
+		}
+		child, isObject := current[part].(map[string]interface{})
+		if !isObject {
+			child = make(map[string]interface{})
+			current[part] = child
+		}
+		current = child
+	}
 }
 
 func buildOutputFromBody(body interface{}, paths map[string]string) attr.Value {
