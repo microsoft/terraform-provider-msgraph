@@ -237,6 +237,12 @@ func DiffObject(old interface{}, new interface{}, option UpdateJsonOption) inter
 			// include keys present in new
 			for key, newVal := range newMap {
 				if oldVal, ok := oldValue[key]; ok {
+					// A nil diff means no change, but an explicit JSON null is also
+					// represented by nil. Preserve a requested clear before recursing.
+					if newVal == nil && oldVal != nil {
+						res[key] = nil
+						continue
+					}
 					if d := DiffObject(oldVal, newVal, option); d != nil {
 						res[key] = newVal
 					}
