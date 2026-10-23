@@ -324,6 +324,13 @@ func (r *MSGraphResource) Create(ctx context.Context, req resource.CreateRequest
 		model.ResourceUrl = types.StringValue(fmt.Sprintf("%s/%s", model.Url.ValueString(), responseId))
 	}
 
+	// The write succeeded and its identity is known. Preserve it before any
+	// follow-up read can fail, so Terraform can track and recover this object.
+	model.Output = types.DynamicValue(buildOutputFromBody(responseBody, model.ResponseExportValues))
+	if resp.Diagnostics.Append(resp.State.Set(ctx, &model)...); resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Wait for the resource to be available
 	if err = consistency.WaitForUpdate(ctx, ResourceExistenceFunc(r.client, model, true)); err != nil {
 		resp.Diagnostics.AddError("Error", fmt.Sprintf("waiting for creation of %s: %v", model.Url.ValueString(), err))
