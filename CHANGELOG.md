@@ -1,12 +1,33 @@
+## 0.6.0
+
+ENHANCEMENTS:
+- `msgraph_resource_action`: Added a `when` attribute (`apply` default, or `destroy`) so the action can be fired only when the resource is destroyed instead of when it's created/updated. Useful for endpoints that only support a single write operation and can't be read back to track state, such as `$ref` relationships that only document `PUT`. ([#157](https://github.com/microsoft/terraform-provider-msgraph/issues/157))
+- `msgraph_resource_collection`: Added a `collection_type` attribute to support `$ref` collections whose members are not `directoryObjects`. Imports can set the collection type with the `collection-type` query parameter. ([#162](https://github.com/microsoft/terraform-provider-msgraph/pull/162))
+
+DEPENDENCIES:
+- Updated `github.com/Azure/azure-sdk-for-go/sdk/azcore` from v1.23.0 to v1.23.1.
+- Updated `github.com/Azure/azure-sdk-for-go/sdk/azidentity` from v1.14.0 to v1.14.1.
+- Updated `github.com/hashicorp/go-uuid` from v1.0.3 to v1.0.4.
+- Updated `google.golang.org/grpc` from v1.82.1 to v1.83.2.
+
 ## 0.5.0
 
 ENHANCEMENTS:
-- Added sovereign cloud support via optional `environment` (`ARM_ENVIRONMENT`) for `public/global`, `usgovernment/usgovernmentl4`, `usgovernmentl5/dod`, and `china`, including cloud-based Graph endpoint/token-scope resolution and `@odata.id` relationship URLs.
+- Added sovereign cloud support via optional `environment` (`ARM_ENVIRONMENT`) for `public/global`, `usgovernment/usgovernmentl4`, `usgovernmentl5/dod`, and `china`, including cloud-based Graph endpoint/token-scope resolution and `@odata.id` relationship URLs. ([#147](https://github.com/microsoft/terraform-provider-msgraph/pull/147))
 - `msgraph_resource`: Added a `create_method` attribute (`POST` default, or `PUT`) to support Graph resources that are created via `PUT` on the resource URL.
+
+DEPENDENCIES:
+- Updated `github.com/Azure/azure-sdk-for-go/sdk/azcore` from v1.21.1 to v1.23.0.
+- Updated `github.com/Azure/azure-sdk-for-go/sdk/azidentity` from v1.13.1 to v1.14.0
+- Updated `github.com/hashicorp/terraform-plugin-log` from v0.10.0 to v0.11.0
+- Updated `github.com/stretchr/testify` from v1.11.1 to v1.12.1.
+- Updated Go from 1.25.8 to 1.26.5.
 
 BUG FIXES:
 - `msgraph_resource_collection`: Fixed a "Provider produced inconsistent final plan" error on `reference_ids` that occurred when only some referenced resources were updated in the same apply (a mix of known and known-after-apply values). Because a `/$ref` collection is unordered, reads now preserve the ordering already recorded in state, keeping the stored order aligned with the configured order so pinned positions no longer shift between plan and apply. ([#135](https://github.com/microsoft/terraform-provider-msgraph/issues/135))
 - `msgraph_resource`: Fixed an issue where updating a nested object (complex type) sent only the changed sub-fields, causing Microsoft Graph to reset omitted siblings to their defaults. The provider now sends the full nested object when any of its fields change (e.g. `federatedIdentityCredential.claimsMatchingExpression`). ([#137](https://github.com/microsoft/terraform-provider-msgraph/issues/137))
+- `msgraph_resource`: Fixed an issue where importing a resource that represents a `$ref` relationship sent an empty request body. ([#148](https://github.com/microsoft/terraform-provider-msgraph/pull/148))
+- Capped `MaxRetryDelay` at 600s so that Microsoft Graph `Retry-After` values up to 315s (seen on Identity Governance endpoints) are honoured instead of being truncated. ([#119](https://github.com/microsoft/terraform-provider-msgraph/pull/119))
 
 ## 0.4.0
 

@@ -5,16 +5,21 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 )
 
-const redactedValue = "REDACTED"
+const (
+	redactedValue             = "REDACTED"
+	logRequestResponseBodyEnv = "MSGRAPH_LOG_REQUEST_RESPONSE_BODY"
+)
 
 type liveTrafficLogPolicy struct {
-	notAllowedHeaders map[string]bool
+	notAllowedHeaders      map[string]bool
+	logRequestResponseBody bool
 }
 
 type traffic struct {
@@ -37,8 +42,10 @@ type liveResponse struct {
 
 func NewLiveTrafficLogPolicy() policy.Policy {
 	return &liveTrafficLogPolicy{
+		logRequestResponseBody: os.Getenv(logRequestResponseBodyEnv) == "true",
 		notAllowedHeaders: map[string]bool{
-			"authorization": true,
+			"authorization":                true,
+			"x-ms-authorization-auxiliary": true,
 		},
 	}
 }
@@ -82,23 +89,28 @@ func (p *liveTrafficLogPolicy) requestBodyString(req *policy.Request) string {
 	if req.Raw().Body == nil {
 		return ""
 	}
+	if !p.logRequestResponseBody {
+		return redactedValue
+	}
 	body, err := io.ReadAll(req.Raw().Body)
 	if err != nil {
-		log.Printf("[ERROR] Failed to read request body: %v", err)
-		body = []byte(err.Error())
-	}
-	if err := req.RewindBody(); err != nil {
-		log.Printf("[ERROR] Failed to rewind request body: %v", err)
-		return ""
+		log.Printf("[ERROR] Failed to read request body for logging: %v", err)
+		return redactedValue
 	}
 	return string(body)
 }
 
 func (p *liveTrafficLogPolicy) responseBodyString(resp *http.Response) string {
+	if resp.Body == nil {
+		return ""
+	}
+	if !p.logRequestResponseBody {
+		return redactedValue
+	}
 	body, err := runtime.Payload(resp)
 	if err != nil {
-		log.Printf("[ERROR] Failed to read response body: %v", err)
-		return ""
+		log.Printf("[ERROR] Failed to read response body for logging: %v", err)
+		return redactedValue
 	}
 	return string(body)
 }

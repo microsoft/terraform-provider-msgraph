@@ -116,6 +116,22 @@ func TestAcc_ResourceCollectionImportWithApiVersion(t *testing.T) {
 	})
 }
 
+func TestAcc_ResourceCollectionImportWithCollectionType(t *testing.T) {
+	data := acceptance.BuildTestData(t, "msgraph_resource_collection", "test")
+	r := MSGraphTestResourceCollection{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.basicWithCollectionType(),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).Exists(r),
+				resource.TestCheckResourceAttr(data.ResourceName, "reference_ids.#", "1"),
+			),
+		},
+		data.ImportStepWithImportStateIdFunc(r.ImportIdFuncWithCollectionType),
+	})
+}
+
 func TestAcc_ResourceCollectionRetry(t *testing.T) {
 	data := acceptance.BuildTestData(t, "msgraph_resource_collection", "test")
 	r := MSGraphTestResourceCollection{}
@@ -220,6 +236,11 @@ func (r MSGraphTestResourceCollection) ImportIdFunc(tfState *terraform.State) (s
 func (r MSGraphTestResourceCollection) ImportIdFuncWithBetaApiVersion(tfState *terraform.State) (string, error) {
 	state := tfState.RootModule().Resources["msgraph_resource_collection.test"].Primary
 	return state.Attributes["url"] + "?api-version=beta", nil
+}
+
+func (r MSGraphTestResourceCollection) ImportIdFuncWithCollectionType(tfState *terraform.State) (string, error) {
+	state := tfState.RootModule().Resources["msgraph_resource_collection.test"].Primary
+	return state.Attributes["url"] + "?collection-type=identityGovernance/entitlementManagement/accessPackages", nil
 }
 
 // configuration helpers
@@ -334,6 +355,52 @@ resource "msgraph_resource_collection" "test" {
   read_query_parameters = {
     "$select" = ["id"]
   }
+}
+`
+}
+
+func (r MSGraphTestResourceCollection) basicWithCollectionType() string {
+	return `
+resource "msgraph_resource" "catalog" {
+  url         = "identityGovernance/entitlementManagement/catalogs"
+  api_version = "v1.0"
+  body = {
+    displayName = "Collection Test Catalog"
+    description = "Catalog for testing msgraph_resource_collection"
+  }
+}
+
+resource "msgraph_resource" "access_package_a" {
+  url         = "identityGovernance/entitlementManagement/accessPackages"
+  api_version = "v1.0"
+  body = {
+    catalog = {
+      id = msgraph_resource.catalog.id
+    }
+    displayName = "Collection Test Access Package A"
+    description = "First access package for collection testing"
+  }
+}
+
+resource "msgraph_resource" "access_package_b" {
+  url         = "identityGovernance/entitlementManagement/accessPackages"
+  api_version = "v1.0"
+  body = {
+    catalog = {
+      id = msgraph_resource.catalog.id
+    }
+    displayName = "Collection Test Access Package B"
+    description = "Second access package for collection testing"
+  }
+}
+
+resource "msgraph_resource_collection" "test" {
+  url             = "identityGovernance/entitlementManagement/accessPackages/${msgraph_resource.access_package_a.id}/incompatibleAccessPackages/$ref"
+  api_version     = "v1.0"
+  collection_type = "identityGovernance/entitlementManagement/accessPackages"
+  reference_ids = [
+    msgraph_resource.access_package_b.id,
+  ]
 }
 `
 }

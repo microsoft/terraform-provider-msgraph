@@ -16,6 +16,8 @@ updates:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "gomod"
     directory: "/"
@@ -31,3 +33,5 @@ updates:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
+    cooldown:
+      default-days: 7

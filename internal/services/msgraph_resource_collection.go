@@ -45,6 +45,7 @@ type MSGraphResourceCollection struct{ client *clients.MSGraphClient }
 type MSGraphResourceCollectionModel struct {
 	Id                   types.String      `tfsdk:"id"`
 	ApiVersion           types.String      `tfsdk:"api_version"`
+	CollectionType       types.String      `tfsdk:"collection_type"`
 	Url                  types.String      `tfsdk:"url"`
 	ReferenceIds         types.List        `tfsdk:"reference_ids"`
 	SkipDestroy          types.Bool        `tfsdk:"skip_destroy"`
@@ -91,10 +92,20 @@ func (r *MSGraphResourceCollection) Schema(ctx context.Context, req resource.Sch
 			},
 
 			"reference_ids": schema.ListAttribute{
-				MarkdownDescription: "List of object IDs that MUST exist in this `$ref` collection. Missing IDs are added; extra remote items are removed. Order is ignored. Each value should be the GUID (or string identifier) of an existing directory object (user, group, service principal, etc.).",
+				MarkdownDescription: "List of object IDs that MUST exist in this `$ref` collection. Missing IDs are added; extra remote items are removed. Order is ignored. Each value should be the GUID (or string identifier) of an existing object whose type set by `collection_type`.",
 				ElementType:         types.StringType,
 				Optional:            true,
 				PlanModifiers:       []planmodifier.List{myplanmodifier.OrderInsensitiveStringList()},
+			},
+
+			"collection_type": schema.StringAttribute{
+				MarkdownDescription: "Relative Microsoft Graph path for the type of resource referenced by each value in `reference_ids`. This path is used to construct the `@odata.id` sent when adding a reference. Defaults to `directoryObjects`. Changing this value forces a new resource.",
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("directoryObjects"),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 
 			"skip_destroy": schema.BoolAttribute{
@@ -264,6 +275,11 @@ func (r *MSGraphResourceCollection) Read(ctx context.Context, req resource.ReadR
 	previous := AsListOfString(model.ReferenceIds)
 	model.ReferenceIds = ToListOfString(reconcileReferenceIdOrder(previous, referenceIds))
 	model.Output = types.DynamicValue(buildOutputFromBody(body, model.ResponseExportValues))
+
+	if model.CollectionType.IsNull() {
+		model.CollectionType = types.StringValue("directoryObjects")
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
 
@@ -318,7 +334,7 @@ func (r *MSGraphResourceCollection) applyCollection(ctx context.Context, model *
 	errs := make([]error, 0)
 	for _, item := range toAdd {
 		body := map[string]string{}
-		body["@odata.id"] = fmt.Sprintf("%s/%s/directoryObjects/%s", r.client.GraphBaseUrl(), model.ApiVersion.ValueString(), item)
+		body["@odata.id"] = fmt.Sprintf("%s/%s/%s/%s", r.client.GraphBaseUrl(), model.ApiVersion.ValueString(), model.CollectionType.ValueString(), item)
 		_, _, err := r.client.Create(ctx, "", model.Url.ValueString(), model.ApiVersion.ValueString(), body, clients.RequestOptions{RetryOptions: clients.NewRetryOptions(model.Retry)})
 		if err != nil {
 			errs = append(errs, err)
@@ -412,11 +428,17 @@ func (r *MSGraphResourceCollection) ImportState(ctx context.Context, req resourc
 		apiVersion = parsedUrl.Query().Get("api-version")
 	}
 
+	collectionType := "directoryObjects"
+	if parsedUrl.Query().Get("collection-type") != "" {
+		collectionType = parsedUrl.Query().Get("collection-type")
+	}
+
 	model := &MSGraphResourceCollectionModel{
 		Id:                  types.StringValue(baseCollectionUrl(urlValue)),
 		Url:                 types.StringValue(urlValue),
 		ApiVersion:          types.StringValue(apiVersion),
 		ReferenceIds:        types.ListNull(types.StringType),
+		CollectionType:      types.StringValue(collectionType),
 		SkipDestroy:         types.BoolValue(false),
 		ReadQueryParameters: types.MapNull(types.ListType{ElemType: types.StringType}),
 		Retry:               retry.NewValueNull(),

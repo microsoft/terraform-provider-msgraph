@@ -86,8 +86,9 @@ Manage the full contents of a child reference collection (such as group members 
 ### Optional
 
 - `api_version` (String) The API version of the data source. The allowed values are `v1.0` and `beta`. Defaults to `v1.0`.
+- `collection_type` (String) Relative Microsoft Graph path for the type of resource referenced by each value in `reference_ids`. This path is used to construct the `@odata.id` sent when adding a reference. Defaults to `directoryObjects`. Changing this value forces a new resource.
 - `read_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the read (list) requests.
-- `reference_ids` (List of String) List of object IDs that MUST exist in this `$ref` collection. Missing IDs are added; extra remote items are removed. Order is ignored. Each value should be the GUID (or string identifier) of an existing directory object (user, group, service principal, etc.).
+- `reference_ids` (List of String) List of object IDs that MUST exist in this `$ref` collection. Missing IDs are added; extra remote items are removed. Order is ignored. Each value should be the GUID (or string identifier) of an existing object whose type set by `collection_type`.
 - `response_export_values` (Map of String) A map where the key is the name for the result and the value is a JMESPath query string to filter the response. Here's an example. If it sets to `{"all" = "@", "app_id" = "appId"}`, it will set the following HCL object to the computed property output.
 
 	```text
@@ -150,4 +151,7 @@ Optional:
  
  # To import using the beta API version, append the api-version query parameter:
  terraform import msgraph_resource_collection.group_members 'groups/00000000-0000-0000-0000-000000000000/members/$ref?api-version=beta'
+ 
+ # To import using custom collection type, append the collection-type query parameter:
+ terraform import msgraph_resource_collection.test 'identityGovernance/entitlementManagement/accessPackages/00000000-0000-0000-0000-000000000000/accessPackages/$ref?collection-type=identityGovernance/entitlementManagement/accessPackages'
  ```

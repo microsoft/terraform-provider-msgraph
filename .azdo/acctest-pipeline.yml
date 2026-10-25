@@ -2,7 +2,11 @@ trigger:
   branches:
     include:
       - with-acctests/**
-      - dependabot/**
+      # Exclude dependabot/**: dependency updates may contain malicious code.
+      # Require human review before running acceptance tests with Azure test credentials.
+      # An internal Go proxy migration was investigated, but its required network-isolation
+      # policy blocks Terraform Registry, preventing AzureAD provider installation
+      # and causing acceptance tests that depend on AzureAD to fail.
 
 pr: none
 

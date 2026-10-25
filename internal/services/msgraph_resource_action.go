@@ -43,6 +43,7 @@ type MSGraphResourceActionModel struct {
 	ResourceUrl          types.String      `tfsdk:"resource_url"`
 	Action               types.String      `tfsdk:"action"`
 	Method               types.String      `tfsdk:"method"`
+	When                 types.String      `tfsdk:"when"`
 	Body                 types.Dynamic     `tfsdk:"body"`
 	QueryParameters      types.Map         `tfsdk:"query_parameters"`
 	Headers              types.Map         `tfsdk:"headers"`
@@ -110,6 +111,19 @@ func (r *MSGraphResourceAction) Schema(ctx context.Context, req resource.SchemaR
 				},
 			},
 
+			"when": schema.StringAttribute{
+				MarkdownDescription: "When to perform the action. `apply` (the default) executes it when the resource is created or updated. `destroy` executes it only when the resource is destroyed, and never on create or update - useful for endpoints that only support a single write operation and can't be read back to track state (for example a `$ref` relationship that only documents `PUT`), where an ordinary resource can't safely manage both directions of the relationship.",
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("apply"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("apply", "destroy"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+
 			"body": schema.DynamicAttribute{
 				MarkdownDescription: docstrings.Body(),
 				Optional:            true,
@@ -146,6 +160,7 @@ func (r *MSGraphResourceAction) Schema(ctx context.Context, req resource.SchemaR
 		Blocks: map[string]schema.Block{
 			"timeouts": timeouts.Block(ctx, timeouts.Opts{
 				Create: true,
+				Delete: true,
 			}),
 		},
 	}
@@ -189,6 +204,16 @@ func (r *MSGraphResourceAction) Create(ctx context.Context, req resource.CreateR
 	// Use the full URL as the ID for this action resource
 	model.Id = types.StringValue(fullUrl)
 
+	if model.When.ValueString() == "destroy" {
+		// The action only runs on destroy, so there's nothing to execute yet. Pass no
+		// export paths: buildOutputFromBody(nil, paths) would otherwise still emit a
+		// null-valued key per configured path, since a JMES search against a nil body
+		// returns (nil, nil) rather than an error.
+		model.Output = types.DynamicValue(buildOutputFromBody(nil, nil))
+		resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+		return
+	}
+
 	// Execute the action
 	if err := r.executeAction(ctx, model); err != nil {
 		resp.Diagnostics.AddError("Failed to execute action", err.Error())
@@ -209,6 +234,12 @@ func (r *MSGraphResourceAction) Update(ctx context.Context, req resource.UpdateR
 	resp.Diagnostics.Append(diags...)
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
+
+	if model.When.ValueString() == "destroy" {
+		// The action only runs on destroy; just persist the updated config.
+		resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+		return
+	}
 
 	// Re-execute the action
 	if err := r.executeAction(ctx, model); err != nil {
@@ -265,16 +296,34 @@ func (r *MSGraphResourceAction) Read(ctx context.Context, req resource.ReadReque
 
 	// For action resources, read is essentially a no-op since actions are one-time operations
 	// We'll just maintain the current state
+	if model.When.IsNull() {
+		// State from before the `when` attribute existed has no value here; default it to
+		// "apply" so it doesn't show as a `null -> "apply"` diff that RequiresReplace() turns
+		// into a resource replacement, re-running potentially non-idempotent actions.
+		model.When = types.StringValue("apply")
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
 
 func (r *MSGraphResourceAction) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// For action resources, delete is typically a no-op since actions are one-time operations
 	var model *MSGraphResourceActionModel
 	if resp.Diagnostics.Append(req.State.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Log the deletion (no actual action needed for most cases)
-	tflog.Info(ctx, fmt.Sprintf("Deleting action resource %s", model.Id.ValueString()))
+	if model.When.ValueString() != "destroy" {
+		// For create-time action resources, delete is a no-op since actions are one-time operations.
+		tflog.Info(ctx, fmt.Sprintf("Deleting action resource %s", model.Id.ValueString()))
+		return
+	}
+
+	deleteTimeout, diags := model.Timeouts.Delete(ctx, 30*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
+	if err := r.executeAction(ctx, model); err != nil {
+		resp.Diagnostics.AddError("Failed to execute action", err.Error())
+		return
+	}
 }
