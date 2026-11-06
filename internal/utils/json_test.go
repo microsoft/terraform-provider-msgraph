@@ -122,6 +122,52 @@ func TestDiffObject(t *testing.T) {
 		want interface{}
 	}{
 		{
+			name: "clear an existing scalar with explicit null",
+			old:  map[string]interface{}{"description": "old"},
+			newV: map[string]interface{}{"description": nil},
+			want: map[string]interface{}{"description": nil},
+		},
+		{
+			name: "clear an existing complex value with explicit null",
+			old:  map[string]interface{}{"settings": map[string]interface{}{"enabled": true}},
+			newV: map[string]interface{}{"settings": nil},
+			want: map[string]interface{}{"settings": nil},
+		},
+		{
+			name: "clear an array with explicit null",
+			old:  map[string]interface{}{"items": []interface{}{"one"}},
+			newV: map[string]interface{}{"items": nil},
+			want: map[string]interface{}{"items": nil},
+		},
+		{
+			name: "nested clear preserves the full complex value",
+			old:  map[string]interface{}{"settings": map[string]interface{}{"description": "old", "enabled": true}},
+			newV: map[string]interface{}{"settings": map[string]interface{}{"description": nil, "enabled": true}},
+			want: map[string]interface{}{"settings": map[string]interface{}{"description": nil, "enabled": true}},
+		},
+		{
+			name: "clear preserves an unchanged OData discriminator",
+			old:  map[string]interface{}{"@odata.type": "#microsoft.graph.example", "description": "old"},
+			newV: map[string]interface{}{"@odata.type": "#microsoft.graph.example", "description": nil},
+			want: map[string]interface{}{"@odata.type": "#microsoft.graph.example", "description": nil},
+		},
+		{
+			name: "existing null is unchanged",
+			old:  map[string]interface{}{"description": nil},
+			newV: map[string]interface{}{"description": nil},
+		},
+		{
+			name: "omitted property does not request a clear",
+			old:  map[string]interface{}{"description": "old"},
+			newV: map[string]interface{}{},
+		},
+		{
+			name: "new explicit null is retained",
+			old:  map[string]interface{}{},
+			newV: map[string]interface{}{"description": nil},
+			want: map[string]interface{}{"description": nil},
+		},
+		{
 			name: "nested map changed + new key",
 			old:  map[string]interface{}{"a": 1, "b": 2, "c": map[string]interface{}{"d": 4}},
 			newV: map[string]interface{}{"a": 1, "b": 3, "c": map[string]interface{}{"d": 4, "e": 5}, "f": 6},

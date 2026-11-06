@@ -1,3 +1,8 @@
+## Unreleased
+
+BUG FIXES:
+- `msgraph_resource`: Fixed an issue where updating an existing `body` property to `null` produced an empty diff and skipped the `PATCH` request. ([#170](https://github.com/microsoft/terraform-provider-msgraph/issues/170))
+
 ## 0.6.0
 
 ENHANCEMENTS:
