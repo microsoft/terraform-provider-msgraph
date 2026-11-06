@@ -1,3 +1,8 @@
+## Unreleased
+
+BUG FIXES:
+- `msgraph_resource`: Fixed an issue where a created resource was not recorded in Terraform state when post-create consistency or read-back verification failed, leaving it orphaned. ([#173](https://github.com/microsoft/terraform-provider-msgraph/pull/173))
+
 ## 0.6.0
 
 ENHANCEMENTS:
