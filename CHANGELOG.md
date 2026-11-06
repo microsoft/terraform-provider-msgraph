@@ -1,3 +1,8 @@
+## Unreleased
+
+BUG FIXES:
+- `msgraph_resource`: Changing `url` now forces the resource to be replaced instead of planning an in-place update that kept managing the old URL. ([#171](https://github.com/microsoft/terraform-provider-msgraph/issues/171))
+
 ## 0.6.0
 
 ENHANCEMENTS:
