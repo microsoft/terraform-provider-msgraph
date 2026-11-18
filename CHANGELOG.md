@@ -1,3 +1,8 @@
+## Unreleased
+
+BUG FIXES:
+- Fixed an issue where paginated reads fetched the first page twice, dropped request headers on continuation requests, and discarded OData collection metadata such as `@odata.context`, `@odata.count`, and `@odata.deltaLink`. ([#172](https://github.com/microsoft/terraform-provider-msgraph/issues/172))
+
 ## 0.6.0
 
 ENHANCEMENTS:
