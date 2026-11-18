@@ -96,6 +96,9 @@ func (r *MSGraphResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"url": schema.StringAttribute{
 				MarkdownDescription: docstrings.Url("resource"),
 				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 
 			"api_version": schema.StringAttribute{

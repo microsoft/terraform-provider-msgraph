@@ -23,6 +23,8 @@ func Url(kind string) string {
   
   More information about the Microsoft Graph API can be found at [Microsoft Graph API](https://docs.microsoft.com/en-us/graph/overview).  
   And there are some [examples](https://github.com/microsoft/terraform-provider-msgraph/tree/main/examples/quickstarts) to help you get started.
+
+  Changing this forces a new resource to be created.
 `
 	case "update_resource":
 		return `The item URL of the existing resource to update, for example "/users/{id}".
