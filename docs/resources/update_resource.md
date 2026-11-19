@@ -3,14 +3,14 @@ page_title: "msgraph_update_resource Resource - terraform-provider-msgraph"
 subcategory: ""
 description: |-
   This resource can manage a subset of any existing Microsoft Graph resource's properties.
-  -> Note This resource is used to add or modify properties on an existing resource. When msgraph_update_resource is deleted, no operation will be performed, and these properties will stay unchanged. If you want to restore the modified properties to some values, you must apply the restored properties before deleting.
+  -> Note This resource is used to add or modify properties on an existing resource. When msgraph_update_resource is deleted, no operation will be performed unless delete_body is set. Use delete_body to restore properties or clear assignments on destroy.
 ---
 
 # msgraph_update_resource (Resource)
 
 This resource can manage a subset of any existing Microsoft Graph resource's properties.
 
--> **Note** This resource is used to add or modify properties on an existing resource. When `msgraph_update_resource` is deleted, no operation will be performed, and these properties will stay unchanged. If you want to restore the modified properties to some values, you must apply the restored properties before deleting.
+-> **Note** This resource is used to add or modify properties on an existing resource. When `msgraph_update_resource` is deleted, no operation will be performed unless `delete_body` is set. Use `delete_body` to restore properties or clear assignments on destroy.
 
 ## Example Usage
 
@@ -68,8 +68,10 @@ This resource can manage a subset of any existing Microsoft Graph resource's pro
 
 - `api_version` (String) The API version of the data source. The allowed values are `v1.0` and `beta`. Defaults to `v1.0`.
 - `body` (Dynamic) A dynamic attribute that contains the request body.
+- `delete_body` (Dynamic) The request body sent to `url` using `update_method` on destroy. When unset, destroy performs no operation.
 - `ignore_missing_property` (Boolean) Whether ignore not returned properties like credentials in `body` to suppress plan-diff. Defaults to `true`. It's recommend to enable this option when some sensitive properties are not returned in response body, instead of setting them in `lifecycle.ignore_changes` because it will make the sensitive fields unable to update.
 - `read_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the read request.
+- `read_url` (String) The URL used for reading the resource. Defaults to `url` when unset or empty.
 - `response_export_values` (Map of String) A map where the key is the name for the result and the value is a JMESPath query string to filter the response. Here's an example. If it sets to `{"all" = "@", "app_id" = "appId"}`, it will set the following HCL object to the computed property output.
 
 	```text
@@ -87,7 +89,7 @@ This resource can manage a subset of any existing Microsoft Graph resource's pro
 To learn more about JMESPath, visit [JMESPath](https://jmespath.org/).
 - `retry` (Attributes) The retry object supports the following attributes: (see [below for nested schema](#nestedatt--retry))
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `update_method` (String) The HTTP method to use for updating the resource. Can be `PATCH` or `PUT`. Defaults to `PATCH`.
+- `update_method` (String) The HTTP method to use for updating the resource. Can be `PATCH`, `PUT` or `POST`. Defaults to `PATCH`.
 - `update_query_parameters` (Map of List of String) A mapping of query parameters to be sent with the update request.
 
 ### Read-Only

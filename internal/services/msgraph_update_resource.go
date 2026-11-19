@@ -52,7 +52,9 @@ type MSGraphUpdateResourceModel struct {
 	UpdateMethod          types.String      `tfsdk:"update_method"`
 	ApiVersion            types.String      `tfsdk:"api_version"`
 	Url                   types.String      `tfsdk:"url"`
+	ReadUrl               types.String      `tfsdk:"read_url"`
 	Body                  types.Dynamic     `tfsdk:"body"`
+	DeleteBody            types.Dynamic     `tfsdk:"delete_body"`
 	IgnoreMissingProperty types.Bool        `tfsdk:"ignore_missing_property"`
 	UpdateQueryParameters types.Map         `tfsdk:"update_query_parameters"`
 	ReadQueryParameters   types.Map         `tfsdk:"read_query_parameters"`
@@ -69,7 +71,7 @@ func (r *MSGraphUpdateResource) Metadata(ctx context.Context, req resource.Metad
 func (r *MSGraphUpdateResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "This resource can manage a subset of any existing Microsoft Graph resource's properties.\n\n" +
-			"-> **Note** This resource is used to add or modify properties on an existing resource. When `msgraph_update_resource` is deleted, no operation will be performed, and these properties will stay unchanged. If you want to restore the modified properties to some values, you must apply the restored properties before deleting.",
+			"-> **Note** This resource is used to add or modify properties on an existing resource. When `msgraph_update_resource` is deleted, no operation will be performed unless `delete_body` is set. Use `delete_body` to restore properties or clear assignments on destroy.",
 		Description: "This resource can manage a subset of any existing Microsoft Graph resource's properties.",
 
 		Attributes: map[string]schema.Attribute{
@@ -85,6 +87,10 @@ func (r *MSGraphUpdateResource) Schema(ctx context.Context, req resource.SchemaR
 				MarkdownDescription: docstrings.Url("update_resource"),
 				Required:            true,
 			},
+			"read_url": schema.StringAttribute{
+				MarkdownDescription: "The URL used for reading the resource. Defaults to `url` when unset or empty.",
+				Optional:            true,
+			},
 
 			"api_version": schema.StringAttribute{
 				MarkdownDescription: docstrings.ApiVersion(),
@@ -97,15 +103,19 @@ func (r *MSGraphUpdateResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 
 			"update_method": schema.StringAttribute{
-				MarkdownDescription: "The HTTP method to use for updating the resource. Can be `PATCH` or `PUT`. Defaults to `PATCH`.",
+				MarkdownDescription: "The HTTP method to use for updating the resource. Can be `PATCH`, `PUT` or `POST`. Defaults to `PATCH`.",
 				Optional:            true,
 				Validators: []validator.String{
-					stringvalidator.OneOf("PATCH", "PUT"),
+					stringvalidator.OneOf("PATCH", "PUT", "POST"),
 				},
 			},
 
 			"body": schema.DynamicAttribute{
 				MarkdownDescription: docstrings.Body(),
+				Optional:            true,
+			},
+			"delete_body": schema.DynamicAttribute{
+				MarkdownDescription: "The request body sent to `url` using `update_method` on destroy. When unset, destroy performs no operation.",
 				Optional:            true,
 			},
 
@@ -175,6 +185,37 @@ func (r *MSGraphUpdateResource) ModifyPlan(ctx context.Context, request resource
 	}
 }
 
+func (r *MSGraphUpdateResource) effectiveReadUrl(model *MSGraphUpdateResourceModel) string {
+	if !model.ReadUrl.IsNull() && model.ReadUrl.ValueString() != "" {
+		return model.ReadUrl.ValueString()
+	}
+	return model.Url.ValueString()
+}
+
+func normalizeCollectionResponse(responseBody interface{}, configuredBody map[string]interface{}) interface{} {
+	respMap, ok := responseBody.(map[string]interface{})
+	if !ok || len(configuredBody) != 1 {
+		return responseBody
+	}
+	rawVal, hasValue := respMap["value"].([]interface{})
+	if !hasValue {
+		return responseBody
+	}
+	for key, configuredVal := range configuredBody {
+		if _, isSlice := configuredVal.([]interface{}); isSlice {
+			if _, existsInResp := respMap[key]; !existsInResp {
+				normalized := make(map[string]interface{}, len(respMap))
+				for k, v := range respMap {
+					normalized[k] = v
+				}
+				normalized[key] = rawVal
+				return normalized
+			}
+		}
+	}
+	return responseBody
+}
+
 func (r *MSGraphUpdateResource) CreateUpdate(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, diagnostics *diag.Diagnostics, isCreate bool) {
 	var model MSGraphUpdateResourceModel
 	var stateModel *MSGraphUpdateResourceModel
@@ -220,7 +261,7 @@ func (r *MSGraphUpdateResource) CreateUpdate(ctx context.Context, plan tfsdk.Pla
 			QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
 			RetryOptions:    clients.NewRetryOptions(model.Retry),
 		}
-		existingBody, err := r.client.Read(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), readOptions)
+		existingBody, err := r.client.Read(ctx, r.effectiveReadUrl(&model), model.ApiVersion.ValueString(), readOptions)
 		if err != nil {
 			diagnostics.AddError("Failed to read existing resource for PUT update", err.Error())
 			return
@@ -246,13 +287,14 @@ func (r *MSGraphUpdateResource) CreateUpdate(ctx context.Context, plan tfsdk.Pla
 		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
 		RetryOptions:    readRetryOptions,
 	}
-	responseBody, err := r.client.Read(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), options)
+	readUrl := r.effectiveReadUrl(&model)
+	responseBody, err := r.client.Read(ctx, readUrl, model.ApiVersion.ValueString(), options)
 	if err != nil {
 		diagnostics.AddError("Failed to read data source", err.Error())
 		return
 	}
 	model.Output = types.DynamicValue(buildOutputFromBody(responseBody, model.ResponseExportValues))
-	model.Id = types.StringValue(utils.LastSegment(model.Url.ValueString()))
+	model.Id = types.StringValue(utils.LastSegment(readUrl))
 	diagnostics.Append(state.Set(ctx, &model)...)
 }
 
@@ -284,7 +326,7 @@ func (r *MSGraphUpdateResource) Read(ctx context.Context, req resource.ReadReque
 		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.ReadQueryParameters)),
 		RetryOptions:    clients.NewRetryOptions(model.Retry),
 	}
-	responseBody, err := r.client.Read(ctx, model.Url.ValueString(), model.ApiVersion.ValueString(), options)
+	responseBody, err := r.client.Read(ctx, r.effectiveReadUrl(model), model.ApiVersion.ValueString(), options)
 	if err != nil {
 		if utils.ResponseErrorWasNotFound(err) {
 			tflog.Info(ctx, fmt.Sprintf("Error reading %q - removing from state", model.Id.ValueString()))
@@ -310,7 +352,8 @@ func (r *MSGraphUpdateResource) Read(ctx context.Context, req resource.ReadReque
 			IgnoreMissingProperty: model.IgnoreMissingProperty.ValueBool(),
 			IgnoreNullProperty:    false,
 		}
-		body := utils.UpdateObject(requestBody, responseBody, option)
+		normalizedResponse := normalizeCollectionResponse(responseBody, requestBody)
+		body := utils.UpdateObject(requestBody, normalizedResponse, option)
 
 		data, err := json.Marshal(body)
 		if err != nil {
@@ -333,4 +376,43 @@ func (r *MSGraphUpdateResource) Read(ctx context.Context, req resource.ReadReque
 }
 
 func (r *MSGraphUpdateResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var model *MSGraphUpdateResourceModel
+	if resp.Diagnostics.Append(req.State.Get(ctx, &model)...); resp.Diagnostics.HasError() {
+		return
+	}
+	if model.DeleteBody.IsNull() || model.DeleteBody.IsUnknown() {
+		return
+	}
+	deleteTimeout, diags := model.Timeouts.Delete(ctx, 30*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+	if model.ApiVersion.ValueString() == "" {
+		model.ApiVersion = types.StringValue("v1.0")
+	}
+	data, err := dynamic.ToJSON(model.DeleteBody)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to marshal delete_body", err.Error())
+		return
+	}
+	var deleteRequestBody interface{}
+	if err = json.Unmarshal(data, &deleteRequestBody); err != nil {
+		resp.Diagnostics.AddError("Failed to unmarshal delete_body", err.Error())
+		return
+	}
+	updateMethod := "PATCH"
+	if !model.UpdateMethod.IsNull() && model.UpdateMethod.ValueString() != "" {
+		updateMethod = model.UpdateMethod.ValueString()
+	}
+	options := clients.RequestOptions{
+		QueryParameters: clients.NewQueryParameters(AsMapOfLists(model.UpdateQueryParameters)),
+		RetryOptions:    clients.NewRetryOptions(model.Retry),
+	}
+	_, err = r.client.Action(ctx, updateMethod, model.Url.ValueString(), model.ApiVersion.ValueString(), deleteRequestBody, options)
+	if err != nil && !utils.ResponseErrorWasNotFound(err) {
+		resp.Diagnostics.AddError("Failed to run delete_body action", err.Error())
+	}
 }

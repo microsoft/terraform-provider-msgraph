@@ -2,7 +2,23 @@ package services_test
 
 import (
 	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"reflect"
+	"strings"
+	"time"
+
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	frameworkresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"github.com/microsoft/terraform-provider-msgraph/internal/dynamic"
+	"github.com/microsoft/terraform-provider-msgraph/internal/services"
 	"regexp"
 	"testing"
 
@@ -433,4 +449,165 @@ resource "msgraph_update_resource" "test" {
   }
 }
 `, displayName)
+}
+
+type assignmentTransport func(*http.Request) (*http.Response, error)
+
+func (f assignmentTransport) Do(req *http.Request) (*http.Response, error) { return f(req) }
+
+type assignmentCredential struct{}
+
+func (assignmentCredential) GetToken(context.Context, policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	return azcore.AccessToken{Token: "test", ExpiresOn: time.Now().Add(time.Hour)}, nil
+}
+
+func TestUpdateResourceAssignments(t *testing.T) {
+	ctx := context.Background()
+	r := services.NewMSGraphUpdateResource().(*services.MSGraphUpdateResource)
+	var schemaResponse frameworkresource.SchemaResponse
+	r.Schema(ctx, frameworkresource.SchemaRequest{}, &schemaResponse)
+	s := schemaResponse.Schema
+	attrs := map[string]tftypes.Value{}
+	for name, typ := range s.Type().TerraformType(ctx).(tftypes.Object).AttributeTypes {
+		attrs[name] = tftypes.NewValue(typ, nil)
+	}
+	state := tfsdk.State{Schema: s, Raw: tftypes.NewValue(s.Type().TerraformType(ctx), attrs)}
+	var model services.MSGraphUpdateResourceModel
+	if d := state.Get(ctx, &model); d.HasError() {
+		t.Fatal(d)
+	}
+	parse := func(input string) types.Dynamic {
+		t.Helper()
+		v, err := dynamic.FromJSONImplied([]byte(input))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return v
+	}
+	assertJSON := func(got, want string) {
+		t.Helper()
+		var a, b interface{}
+		if err := json.Unmarshal([]byte(got), &a); err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal([]byte(want), &b); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(a, b) {
+			t.Fatalf("got %s, want %s", got, want)
+		}
+	}
+	model.Url = types.StringValue("policies/policy/microsoft.graph.assign")
+	model.ReadUrl = types.StringValue("policies/policy/assignments")
+	model.ApiVersion = types.StringValue("beta")
+	model.UpdateMethod = types.StringValue("POST")
+	model.IgnoreMissingProperty = types.BoolValue(true)
+	payload := `{"assignments":[{"target":{"@odata.type":"#microsoft.graph.groupAssignmentTarget","groupId":"group"}}]}`
+	model.Body = parse(payload)
+	model.DeleteBody = parse(`{"assignments":[]}`)
+	response := `{"@odata.context":"metadata","value":[{"id":"server","sourceId":"source","target":{"@odata.type":"#microsoft.graph.groupAssignmentTarget","groupId":"group"}}]}`
+	status := http.StatusOK
+	var calls []string
+	client, err := clients.NewMSGraphClient(assignmentCredential{}, cloud.Configuration{}, &policy.ClientOptions{
+		Retry: policy.RetryOptions{MaxRetries: -1},
+		Transport: assignmentTransport(func(req *http.Request) (*http.Response, error) {
+			calls = append(calls, req.Method+" "+req.URL.Path)
+			body := response
+			if req.Method != http.MethodGet {
+				data, err := io.ReadAll(req.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+				assertJSON(string(data), payload)
+				body = ""
+			}
+			return &http.Response{StatusCode: status, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(body)), ContentLength: int64(len(body)), Request: req}, nil
+		}),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.Configure(ctx, frameworkresource.ConfigureRequest{ProviderData: &clients.Client{MSGraphClient: client}}, &frameworkresource.ConfigureResponse{})
+	if d := state.Set(ctx, &model); d.HasError() {
+		t.Fatal(d)
+	}
+	created := frameworkresource.CreateResponse{State: state}
+	r.Create(ctx, frameworkresource.CreateRequest{Plan: tfsdk.Plan{Schema: s, Raw: state.Raw}}, &created)
+	if created.Diagnostics.HasError() {
+		t.Fatal(created.Diagnostics)
+	}
+	if want := []string{"POST /beta/policies/policy/microsoft.graph.assign", "GET /beta/policies/policy/assignments"}; !reflect.DeepEqual(calls, want) {
+		t.Fatalf("calls: %v", calls)
+	}
+	state = created.State
+	if d := state.Get(ctx, &model); d.HasError() {
+		t.Fatal(d)
+	}
+	if model.Id.ValueString() != "assignments" {
+		t.Fatalf("ID: %s", model.Id)
+	}
+	for _, tc := range []struct{ name, response, want string }{
+		{"metadata stripped", response, payload},
+		{"portal edit", strings.ReplaceAll(response, `"group"`, `"changed"`), strings.ReplaceAll(payload, `"group"`, `"changed"`)},
+		{"portal unassignment", `{"value":[]}`, `{"assignments":[]}`},
+		{"noncollection value", `{"value":null}`, payload},
+		{"named key wins", `{"value":[],"assignments":[{"target":{"@odata.type":"#microsoft.graph.groupAssignmentTarget","groupId":"explicit"}}]}`, strings.ReplaceAll(payload, `"group"`, `"explicit"`)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			response = tc.response
+			read := frameworkresource.ReadResponse{State: state}
+			r.Read(ctx, frameworkresource.ReadRequest{State: state}, &read)
+			if read.Diagnostics.HasError() {
+				t.Fatal(read.Diagnostics)
+			}
+			var refreshed services.MSGraphUpdateResourceModel
+			if d := read.State.Get(ctx, &refreshed); d.HasError() {
+				t.Fatal(d)
+			}
+			got, err := dynamic.ToJSON(refreshed.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assertJSON(string(got), tc.want)
+		})
+	}
+	payload = `{"assignments":[]}`
+	for _, code := range []int{200, 404, 400} {
+		status = code
+		deleted := frameworkresource.DeleteResponse{State: state}
+		r.Delete(ctx, frameworkresource.DeleteRequest{State: state}, &deleted)
+		if deleted.Diagnostics.HasError() != (code == 400) {
+			t.Fatalf("status %d: %v", code, deleted.Diagnostics)
+		}
+		if calls[len(calls)-1] != "POST /beta/policies/policy/microsoft.graph.assign" {
+			t.Fatal(calls)
+		}
+	}
+	status = http.StatusOK
+	for _, v := range []types.Dynamic{types.DynamicNull(), types.DynamicUnknown()} {
+		model.DeleteBody = v
+		if d := state.Set(ctx, &model); d.HasError() {
+			t.Fatal(d)
+		}
+		before := len(calls)
+		deleted := frameworkresource.DeleteResponse{State: state}
+		r.Delete(ctx, frameworkresource.DeleteRequest{State: state}, &deleted)
+		if deleted.Diagnostics.HasError() || len(calls) != before {
+			t.Fatalf("unexpected cleanup: %v", deleted.Diagnostics)
+		}
+	}
+	for _, v := range []types.String{types.StringNull(), types.StringValue("")} {
+		model.ReadUrl = v
+		if d := state.Set(ctx, &model); d.HasError() {
+			t.Fatal(d)
+		}
+		read := frameworkresource.ReadResponse{State: state}
+		r.Read(ctx, frameworkresource.ReadRequest{State: state}, &read)
+		if read.Diagnostics.HasError() {
+			t.Fatal(read.Diagnostics)
+		}
+		if calls[len(calls)-1] != "GET /beta/policies/policy/microsoft.graph.assign" {
+			t.Fatal(calls)
+		}
+	}
 }
