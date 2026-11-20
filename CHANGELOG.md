@@ -1,3 +1,8 @@
+## 0.7.0
+
+ENHANCEMENTS:
+- `msgraph_resource`: Added the `importProperties` query parameter to import IDs, e.g. `/groups/{id}?importProperties=displayName,mailEnabled`. The listed properties (dot notation for nested ones) are stored in `body` on import and filled from Microsoft Graph, so the first plan after an import only shows real differences and `-generate-config-out` produces a populated `body`. ([#89](https://github.com/microsoft/terraform-provider-msgraph/issues/89))
+
 ## 0.6.0
 
 ENHANCEMENTS:
